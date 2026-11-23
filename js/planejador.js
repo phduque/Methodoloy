@@ -120,7 +120,7 @@
           regra: (e) =>
             e.tipo !== "interferencia"
               ? "Intervenção só faz sentido para testar interferência."
-              : e.manipulacao !== "planejada"
+              : e.manipulacao && e.manipulacao !== "planejada"
               ? "Exige uma intervenção introduzida por você."
               : e.fonte === "documental"
               ? "Não é possível intervir em documentos já produzidos."
@@ -133,7 +133,7 @@
           regra: (e) =>
             e.tipo !== "interferencia"
               ? "Intervenção só faz sentido para testar interferência."
-              : e.manipulacao !== "planejada"
+              : e.manipulacao && e.manipulacao !== "planejada"
               ? "Exige uma intervenção introduzida por você."
               : e.fonte === "documental"
               ? "Não é possível intervir em documentos já produzidos."
