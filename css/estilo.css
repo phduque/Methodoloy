@@ -360,3 +360,16 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
   .pl-grade { grid-template-columns: 1fr; }
   .pl-painel { position: static; }
 }
+
+/* Diagnóstico ao lado dos campos */
+.diag:empty { display: none; }
+.diag { display: grid; gap: .5rem; }
+.diag-titulo { font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--aviso); }
+.diag-ok { font-size: .88rem; color: var(--ok); padding: .35rem .1rem; }
+.diag-item { border: 1px solid var(--borda); border-left: 4px solid var(--info); background: var(--info-bg); border-radius: 8px; padding: .6rem .8rem; display: grid; gap: .3rem; font-size: .9rem; }
+.diag-item.aviso { border-left-color: var(--aviso); background: var(--aviso-bg); }
+.diag-item p { margin: 0; line-height: 1.45; }
+.diag-item strong { font-weight: 700; }
+.diag-sug { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; justify-content: space-between; background: var(--sup); border: 1px dashed var(--borda); border-radius: 6px; padding: .45rem .6rem; }
+.diag-sug q { font-family: var(--serif); }
+.sugestao small { display: block; margin-top: .7rem; }

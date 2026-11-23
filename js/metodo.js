@@ -120,7 +120,7 @@ const ETAPAS = [
     ],
     campos: [
       { id: "tema", tipo: "text", rotulo: "Tema geral", ph: "Ex.: efeito da cor do ambiente sobre o apetite" },
-      { id: "pergunta", tipo: "textarea", rotulo: "Pergunta de pesquisa", ph: "Uma pergunta clara, que possa ser respondida com evidência empírica." },
+      { id: "pergunta", tipo: "textarea", rotulo: "Pergunta de pesquisa", ph: "Uma pergunta clara, que possa ser respondida com evidência empírica.", diag: "pergunta" },
       {
         id: "nivel",
         tipo: "select",
@@ -177,8 +177,8 @@ const ETAPAS = [
     campos: [
       { id: "variaveis", tipo: "list", rotulo: "Variáveis do estudo", ph: "Ex.: cor do ambiente; ingestão de alimento" },
       { id: "objetivo", tipo: "objetivo", rotulo: "Construtor de objetivo" },
-      { id: "hipotese", tipo: "textarea", rotulo: "Hipótese (se não for descritiva)", ph: "Ex.: O aumento da carga de memória interfere na precisão dos julgamentos de gramaticalidade, reduzindo a taxa de respostas corretas." },
-      { id: "especificos", tipo: "list", rotulo: "Objetivos específicos (se o seu programa exigir)", ph: "Cada um também deve ter um tipo lógico claro." },
+      { id: "hipotese", tipo: "textarea", rotulo: "Hipótese (se não for descritiva)", ph: "Ex.: O aumento da carga de memória interfere na precisão dos julgamentos de gramaticalidade, reduzindo a taxa de respostas corretas.", diag: "hipotese" },
+      { id: "especificos", tipo: "list", rotulo: "Objetivos específicos (se o seu programa exigir)", ph: "Cada um também deve ter um tipo lógico claro.", diag: "especificos" },
     ],
   },
   {
@@ -500,7 +500,7 @@ const ETAPAS = [
     erros: ["Conclusão no passado ('aumentou') quando se refere à população — conclusões gerais vão no presente.", "Conclusão que apenas repete um resultado."],
     checar: ["conclusoes"],
     campos: [
-      { id: "conclusoes", tipo: "list", rotulo: "Conclusões (da mais geral para as mais restritas)", ph: "O ambiente vermelho aumenta o apetite em peixes." },
+      { id: "conclusoes", tipo: "list", rotulo: "Conclusões (da mais geral para as mais restritas)", ph: "O ambiente vermelho aumenta o apetite em peixes.", diag: "conclusoes" },
     ],
   },
   {
@@ -711,7 +711,7 @@ const ETAPAS = [
     porque: "O objetivo é a ponte entre a introdução e as conclusões: a conclusão responde exatamente ao objetivo.",
     erros: ["Objetivo que não corresponde às conclusões apresentadas."],
     checar: ["objetivo"],
-    campos: [{ id: "objetivo", tipo: "textarea", rotulo: "Objetivo(s)", importar: "pr-tipo.objetivo" }],
+    campos: [{ id: "objetivo", tipo: "textarea", rotulo: "Objetivo(s)", importar: "pr-tipo.objetivo", diag: "objetivo" }],
   },
   {
     id: "p25",

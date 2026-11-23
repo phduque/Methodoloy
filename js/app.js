@@ -7,6 +7,7 @@
   const V = window.VERIFICADOR;
   const AU = window.AULAS;
   const PL = window.PLANEJADOR;
+  const DG = window.DIAG;
   const CHAVE = "metodo-logico-v1";
   const $ = (s, el = document) => el.querySelector(s);
   const app = $("#app");
@@ -567,6 +568,9 @@
 
   /* --------------------------------- campos -------------------------------- */
   function campoHTML(p, e, c) {
+    return campoHTMLBase(p, e, c) + (c.diag ? `<div class="diag" data-diag="${c.id}" aria-live="polite"></div>` : "");
+  }
+  function campoHTMLBase(p, e, c) {
     const v = getValor(p, e, c);
     const id = `c-${c.id}`;
     const imp = c.importar && vazio(v) ? `<button type="button" class="link" data-importar="${c.id}">↧ Trazer do que já foi preenchido</button>` : "";
@@ -648,7 +652,8 @@
             <label>Fenômeno / população teórica (opcional)<input data-obj="f" value="${esc(o.f)}" placeholder="Ex.: peixes; leitores iniciantes; textos argumentativos"></label>
             <div class="sugestao"><small>Sugestão gerada</small><p id="obj-sug">${esc(t.modelo(o.a, o.b, o.f))}</p><button type="button" class="btn pequeno" data-usar-sug>Usar sugestão</button>
               ${o.tipo !== "descritiva" ? `<small>Hipótese sugerida</small><p id="hip-sug">${esc(hipoteseSugerida(o))}</p><button type="button" class="btn pequeno" data-usar-hip>Usar como hipótese</button>` : ""}</div>
-            <label>Objetivo (texto final)<textarea data-obj="texto" rows="3">${esc(o.texto)}</textarea></label>`
+            <label>Objetivo (texto final)<textarea data-obj="texto" rows="3">${esc(o.texto)}</textarea></label>
+            <div class="diag" data-diag="__objetivo" aria-live="polite"></div>`
           : `<p class="nota">Escolha o tipo lógico para montar o objetivo.</p>`
       }
     </div>`;
@@ -1174,6 +1179,20 @@
       const t = ev.target.closest("button");
       if (!t) return;
       const d = t.dataset;
+      if (d.diagUsar) {
+        const [chave] = d.diagUsar.split(":");
+        const sug = sugestoesDiag[d.diagUsar];
+        if (!sug) return;
+        if (chave === "__objetivo") {
+          const c = porTipo("objetivo");
+          const o = getValor(p, e, c) || {};
+          o.texto = sug;
+          setValor(p, e, c, o);
+        } else setValor(p, e, campo(chave), sug);
+        rerender();
+        aviso("Sugestão aplicada. Revise o texto.");
+        return;
+      }
       if (d.plP) {
         const e0 = estadoPlano(p);
         const q = PL.PERGUNTAS.find((x) => x.id === d.plP);
@@ -1346,6 +1365,46 @@
     return v || "";
   }
 
+  /* ------------------------------ diagnóstico ------------------------------ */
+  function ctxDiag(p) {
+    const o = val(p, "pr-tipo", "objetivo") || {};
+    return { tipo: o.tipo, a: o.a, b: o.b, f: o.f, direcao: o.direcao, geral: val(p, "p24", "objetivo") || o.texto };
+  }
+  function diagnosticoDe(p, etapaId, chave) {
+    const ctx = ctxDiag(p);
+    if (chave === "__objetivo") return DG.objetivo((val(p, "pr-tipo", "objetivo") || {}).texto, ctx);
+    const e = etapaPorId(etapaId);
+    const c = e && e.campos.find((x) => x.id === chave);
+    if (!c) return [];
+    const v = getValor(p, e, c);
+    return DG[c.diag] ? DG[c.diag](v, ctx) : [];
+  }
+  const sugestoesDiag = {};
+  function diagHTML(lista, chave, vazio) {
+    if (vazio) return "";
+    if (!lista.length) return `<div class="diag-ok">✓ Nenhum problema encontrado pelos critérios do Método Lógico.</div>`;
+    return `<div class="diag-titulo">Diagnóstico — ${lista.length} ponto(s) a corrigir</div>${lista
+      .map((d, i) => {
+        if (d.sugestao) sugestoesDiag[chave + ":" + i] = d.sugestao;
+        return `<div class="diag-item ${d.nivel}">
+          <div class="diag-cab"><b>${esc(d.regra)}</b>${d.trecho && d.trecho !== "—" ? ` <code>${esc(d.trecho)}</code>` : ""}</div>
+          <p><strong>Por que está inadequado:</strong> ${esc(d.porque)}</p>
+          <p><strong>Como corrigir:</strong> ${esc(d.corrigir)}</p>
+          ${d.sugestao ? `<div class="diag-sug"><span>Sugestão: <q>${esc(d.sugestao)}</q></span>${chave === "conclusoes" || chave === "especificos" ? "" : `<button type="button" class="btn pequeno" data-diag-usar="${chave}:${i}">Usar sugestão</button>`}</div>` : ""}
+        </div>`;
+      })
+      .join("")}`;
+  }
+  function renderDiags(p, e) {
+    document.querySelectorAll("[data-diag]").forEach((box) => {
+      const chave = box.dataset.diag;
+      const lista = diagnosticoDe(p, e.id, chave);
+      const v = chave === "__objetivo" ? (val(p, "pr-tipo", "objetivo") || {}).texto : val(p, e.id, chave);
+      const vazio = !v || (Array.isArray(v) ? !v.some((x) => x && String(x).trim()) : !String(v).trim());
+      box.innerHTML = diagHTML(lista, chave, vazio);
+    });
+  }
+
   /* ------------------------------- alertas -------------------------------- */
   let tAlert;
   function agendarAlertas(p, e) {
@@ -1358,11 +1417,8 @@
     const acad = TIPOS_TRABALHO[p.meta.tipo].academico;
     if (e.id === "pr-tipo") {
       const o = val(p, "pr-tipo", "objetivo") || {};
-      out.push(...V.objetivo(o.texto, o.tipo));
       if (o.tipo && o.tipo !== "descritiva" && !(val(p, "pr-tipo", "hipotese") || "").trim())
         out.push({ nivel: "info", regra: "Hipótese ausente", trecho: "—", dica: "Pesquisas de associação e de interferência precisam de hipótese (relação esperada entre variáveis)." });
-      if (o.tipo === "interferencia" && !(o.direcao || "").trim())
-        out.push({ nivel: "info", regra: "Direção do efeito", trecho: "—", dica: "Em interferência, explicite a variável interferente, a afetada e a direção do efeito (aumenta, reduz…)." });
     }
     if (e.id === "pr-delineamento") out.push(...checarDelineamento(p));
     if (e.id === "p16") out.push(...V.legendas(val(p, "p16", "legendas")));
@@ -1376,8 +1432,7 @@
           if (Array.isArray(v) && c.tipo === "outline")
             v.forEach((it) => out.push(...V.estilo(textoItem(it))));
         });
-      if (k === "conclusoes") out.push(...V.conclusoes(val(p, "p13", "conclusoes")));
-      if (k === "objetivo") out.push(...V.objetivo(val(p, "p24", "objetivo"), tl));
+
       if (k === "titulo") out.push(...V.titulo(val(p, "p30", "titulo"), acad));
       if (k === "resumo") out.push(...V.resumo(val(p, "p28", "resumo"), p.meta.tipo).filter((a) => a.regra !== "Voz passiva" && a.regra !== "Impessoalidade"));
       if (k === "documento") verificarTudo(p).forEach((g) => g.alertas.forEach((a) => out.push({ ...a, regra: `${g.secao}: ${a.regra}` })));
@@ -1413,10 +1468,11 @@
   function alertasHTML(lista) {
     if (!lista.length) return "";
     return `<section class="alertas"><h3>Verificador lógico <small>${lista.length} ponto(s) para avaliar</small></h3>${lista
-      .map((a) => `<div class="alerta ${a.nivel}"><b>${esc(a.regra)}</b> <code>${esc(a.trecho)}</code><p>${esc(a.dica)}</p></div>`)
+      .map((a) => `<div class="alerta ${a.nivel}"><b>${esc(a.regra)}</b> <code>${esc(a.trecho)}</code>${a.porque ? `<p><strong>Por que:</strong> ${esc(a.porque)}</p><p><strong>Como corrigir:</strong> ${esc(a.corrigir)}</p>${a.sugestao ? `<p class="nota">Sugestão: “${esc(a.sugestao)}”</p>` : ""}` : `<p>${esc(a.dica)}</p>`}</div>`)
       .join("")}<p class="nota">Alertas automáticos são sugestões: decida com base na lógica do seu argumento.</p></section>`;
   }
   function atualizarAlertas(p, e) {
+    renderDiags(p, e);
     const el = $("#alertas");
     if (el) el.innerHTML = alertasHTML(alertasDaEtapa(p, e));
   }
@@ -1644,8 +1700,12 @@
     add("Palavras-chave", "p28", V.palavrasChave(val(p, "p28", "palavras"), val(p, "p30", "titulo") || p.meta.titulo, val(p, "p24", "objetivo") || (val(p, "pr-tipo", "objetivo") || {}).texto, AU.PALAVRAS_GENERICAS));
     add("Delineamento", "pr-delineamento", checarDelineamento(p));
     add("Resumo", "p28", V.resumo(val(p, "p28", "resumo"), p.meta.tipo));
-    add("Objetivo", "p24", V.objetivo(val(p, "p24", "objetivo") || (val(p, "pr-tipo", "objetivo") || {}).texto, tl));
-    add("Conclusões", "p13", V.conclusoes(val(p, "p13", "conclusoes")));
+    const cx = ctxDiag(p);
+    add("Pergunta de pesquisa", "pr-pergunta", DG.pergunta(val(p, "pr-pergunta", "pergunta"), cx));
+    add("Objetivo", "p24", DG.objetivo(val(p, "p24", "objetivo") || (val(p, "pr-tipo", "objetivo") || {}).texto, cx));
+    add("Objetivos específicos", "pr-tipo", DG.especificos(val(p, "pr-tipo", "especificos"), cx));
+    add("Hipótese", "pr-tipo", DG.hipotese(val(p, "pr-tipo", "hipotese"), cx));
+    add("Conclusões", "p13", DG.conclusoes(val(p, "p13", "conclusoes"), cx));
     add("Introdução", "p26", est(val(p, "p25", "outline")));
     if (acad) add("Marco teórico", "pmarco", est(val(p, "pmarco-outline", "outline")));
     add("Métodos", "p18", ["sujeito", "estrategia", "procedimentos", "analise"].flatMap((k) => V.estilo(val(p, "p18", k) || "")));
@@ -1668,7 +1728,7 @@
           ? g
               .map(
                 (x) => `<section class="painel"><h3>${esc(x.secao)} <small>${x.alertas.length}</small> <a class="link" href="#/p/${p.id}/etapa/${x.etapa}">editar →</a></h3>${x.alertas
-                  .map((a) => `<div class="alerta ${a.nivel}"><b>${esc(a.regra)}</b> <code>${esc(a.trecho)}</code><p>${esc(a.dica)}</p></div>`)
+                  .map((a) => `<div class="alerta ${a.nivel}"><b>${esc(a.regra)}</b> <code>${esc(a.trecho)}</code>${a.porque ? `<p><strong>Por que:</strong> ${esc(a.porque)}</p><p><strong>Como corrigir:</strong> ${esc(a.corrigir)}</p>${a.sugestao ? `<p class="nota">Sugestão: “${esc(a.sugestao)}”</p>` : ""}` : `<p>${esc(a.dica)}</p>`}</div>`)
                   .join("")}</section>`
               )
               .join("")
