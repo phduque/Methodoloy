@@ -6,6 +6,7 @@
   const { TIPOS_TRABALHO, TIPOS_LOGICOS, FASES, ETAPAS, ESTRUTURA_DOC } = window.METODO;
   const V = window.VERIFICADOR;
   const AU = window.AULAS;
+  const PL = window.PLANEJADOR;
   const CHAVE = "metodo-logico-v1";
   const $ = (s, el = document) => el.querySelector(s);
   const app = $("#app");
@@ -598,9 +599,11 @@
       case "delineamento":
         return `<div class="campo">${cab}${delineamentoHTML(p, v)}</div>`;
       case "teste":
-        return `<div class="campo">${cab}${testeHTML(v || {})}</div>`;
+        return `<div class="campo">${cab}${testeHTML(p, v || {})}</div>`;
       case "grafico":
-        return `<div class="campo">${cab}${graficoHTML(v || {})}</div>`;
+        return `<div class="campo">${cab}${graficoHTML(p, v || {})}</div>`;
+      case "planejador":
+        return `<div class="campo">${planejadorHTML(p)}</div>`;
       case "fundamentacao":
         return `<div class="campo">${cab}${fundamentacaoHTML(p)}</div>`;
       case "resumo7":
@@ -719,22 +722,37 @@
   function delineamentoHTML(p, v) {
     const tl = tipoLogico(p);
     const d = AU.DELINEAMENTOS.find((x) => x.id === v);
+    const e = estadoPlano(p);
+    const motivo = (id) => PL.regraDe("modelo", id, e);
     return `<select data-campo-delin>${["<option value=''>— escolha —</option>"]
       .concat(
         AU.DELINEAMENTOS.map(
-          (x) => `<option value="${x.id}" ${v === x.id ? "selected" : ""}>${esc(x.nome)}${tl && !x.tipos.includes(tl) ? " (não combina com seu tipo lógico)" : ""}</option>`
+          (x) => `<option value="${x.id}" ${v === x.id ? "selected" : ""} ${motivo(x.id) && v !== x.id ? "disabled" : ""}>${esc(x.nome)}${motivo(x.id) ? " — incompatível" : ""}</option>`
         )
       )
       .join("")}</select>
       ${d ? `<p class="nota">${esc(d.usa)}</p>` : ""}
+      ${v && motivo(v) ? `<p class="alerta aviso">${esc(motivo(v))}</p>` : ""}
+      <p class="nota">Opções incompatíveis com o desenho da pesquisa aparecem desativadas. <a href="#/p/${p.id}/etapa/pr-desenho">Revisar o desenho</a></p>
       ${!tl ? `<p class="nota">Defina o tipo lógico na etapa “Variáveis, tipo lógico e objetivo” para ver quais modelos combinam.</p>` : ""}`;
   }
-  function testeHTML(v) {
+  function testeHTML(p, v0) {
+    const e = estadoPlano(p);
+    const der = PL.perguntaEstatistica(e);
+    const v = { pergunta: v0.pergunta || der.pergunta, variavel: v0.variavel || e.variavel, grupos: v0.grupos || der.grupos };
+    const perm = PL.perguntasPermitidas(e.tipo);
     const sel = (k, ops) =>
-      `<select data-teste="${k}"><option value="">—</option>${ops.map(([a, b]) => `<option value="${a}" ${v[k] === a ? "selected" : ""}>${esc(b)}</option>`).join("")}</select>`;
+      `<select data-teste="${k}"><option value="">—</option>${ops
+        .map(([a, b]) => {
+          const m = k === "pergunta" ? perm[a] : null;
+          return `<option value="${a}" ${v[k] === a ? "selected" : ""} ${m && v[k] !== a ? "disabled" : ""}>${esc(b)}${m ? " — incompatível" : ""}</option>`;
+        })
+        .join("")}</select>`;
+    const avisoQuali = e.abordagem === "quali" ? `<p class="alerta info">Seu desenho é qualitativo: a análise indicada está no <a href="#/p/${p.id}/etapa/pr-desenho">Desenho da pesquisa</a>. Use este assistente só se houver quantificação.</p>` : "";
+    const derivado = !v0.pergunta && der.pergunta ? `<p class="nota">Pré-preenchido a partir do desenho da pesquisa.</p>` : "";
     const rec = v.pergunta && v.variavel ? AU.recomendarTeste(v.pergunta, v.variavel, v.grupos || "2") : null;
     const mostraGrupos = v.pergunta === "comparar" && v.variavel && v.variavel !== "nominal";
-    return `<div class="assistente">
+    return `<div class="assistente">${avisoQuali}${derivado}
       <div class="tres">
         <label>Pergunta${sel("pergunta", [["descrever", "Descrever um grupo"], ["comparar", "Comparar grupos"], ["relacionar", "Relacionar duas variáveis"]])}</label>
         <label>Tipo da variável principal${sel("variavel", Object.entries(AU.VARIAVEIS).map(([k, x]) => [k, x.nome]))}</label>
@@ -752,12 +770,127 @@
           : ""
       }</div>`;
   }
-  function graficoHTML(v) {
+  function graficoHTML(p, v) {
+    const e = estadoPlano(p);
     const g = AU.GRAFICOS[v.objetivo];
-    return `<div class="assistente"><label>O que você quer mostrar?<select data-grafico><option value="">— escolha —</option>${AU.OBJETIVOS_GRAFICO.map(
-      ([k, n]) => `<option value="${k}" ${v.objetivo === k ? "selected" : ""}>${esc(n)}</option>`
-    ).join("")}</select></label>
-      ${g ? `<div class="recomendacao"><b>${esc(g.nome)}</b><p>${esc(g.leitura)}</p><p class="nota">Exemplo: ${esc(g.ex)}</p></div>` : ""}</div>`;
+    const m = (k) => PL.graficoPermitido(k, e);
+    const ordenados = AU.OBJETIVOS_GRAFICO.slice().sort((a, b) => (m(a[0]) ? 1 : 0) - (m(b[0]) ? 1 : 0));
+    return `<div class="assistente"><label>O que você quer mostrar?<select data-grafico><option value="">— escolha —</option>${ordenados
+      .map(([k, n]) => `<option value="${k}" ${v.objetivo === k ? "selected" : ""} ${m(k) && v.objetivo !== k ? "disabled" : ""}>${esc(n)}${m(k) ? " — incompatível" : ""}</option>`)
+      .join("")}</select></label>
+      ${g ? `<div class="recomendacao"><b>${esc(g.nome)}</b><p>${esc(g.leitura)}</p><p class="nota">Exemplo: ${esc(g.ex)}</p></div>` : ""}
+      ${v.objetivo && m(v.objetivo) ? `<p class="alerta aviso">${esc(m(v.objetivo))}</p>` : ""}
+      ${e.abordagem ? `<p class="nota">As opções seguem o desenho da pesquisa (${{ quanti: "quantitativo", quali: "qualitativo", misto: "misto" }[e.abordagem]}).</p>` : ""}</div>`;
+  }
+
+  /* ---- Planejador do desenho ---- */
+  function estadoPlano(p) {
+    const plano = val(p, "pr-desenho", "plano") || {};
+    const obj = val(p, "pr-tipo", "objetivo") || {};
+    const teste = val(p, "p2", "teste") || {};
+    return { ...plano, tipo: obj.tipo, modelo: val(p, "pr-delineamento", "modelo"), variavel: teste.variavel || plano.variavel };
+  }
+  function setResposta(p, pid, valor) {
+    if (pid === "tipo") {
+      const o = dadosEtapa(p, "pr-tipo");
+      o.objetivo = { ...(o.objetivo || {}), tipo: valor || undefined };
+    } else if (pid === "modelo") dadosEtapa(p, "pr-delineamento").modelo = valor || "";
+    else if (pid === "variavel") {
+      const d = dadosEtapa(p, "p2");
+      d.teste = { ...(d.teste || {}), variavel: valor || "" };
+    } else {
+      const d = dadosEtapa(p, "pr-desenho");
+      d.plano = { ...(d.plano || {}), [pid]: valor };
+    }
+  }
+  function responder(p, pid, valor) {
+    setResposta(p, pid, valor);
+    return limparPlano(p);
+  }
+  function limparPlano(p) {
+    const desfeitas = [];
+    for (let i = 0; i < 12; i++) {
+      const { invalidas } = PL.avaliar(estadoPlano(p));
+      if (!invalidas.length) break;
+      invalidas.forEach((x) => {
+        desfeitas.push(x);
+        if (x.pergunta === "tecnicas") setResposta(p, "tecnicas", (estadoPlano(p).tecnicas || []).filter((t) => t !== x.opcao));
+        else setResposta(p, x.pergunta, "");
+      });
+    }
+    p.atualizado = Date.now();
+    salvar();
+    return desfeitas;
+  }
+  let ultimasDesfeitas = [];
+  function planejadorHTML(p) {
+    if (PL.avaliar(estadoPlano(p)).invalidas.length) ultimasDesfeitas = ultimasDesfeitas.concat(limparPlano(p));
+    const e = estadoPlano(p);
+    const { visiveis, completo } = PL.avaliar(e);
+    const total = PL.PERGUNTAS.filter((q) => !q.quando || q.quando(e)).length;
+    const respondidas = visiveis.filter((q) => (q.multi ? (q.valor || []).length : q.valor)).length;
+    const cards = visiveis
+      .map((q, i) => {
+        const marcado = (o) => (q.multi ? (q.valor || []).includes(o.id) : q.valor === o.id);
+        const resp = q.multi ? (q.valor || []).length > 0 : !!q.valor;
+        return `<section class="pl-pergunta ${resp ? "respondida" : "atual"}">
+          <header><span class="pl-n">${i + 1}</span><div><h4>${esc(q.titulo)}</h4><small>${esc(q.ajuda)}</small></div>
+          <span class="pl-cont">${q.possiveis} de ${q.opcoes.length} possíveis</span></header>
+          <div class="pl-opcoes" role="${q.multi ? "group" : "radiogroup"}">${q.opcoes
+            .map(
+              (o) => `<button type="button" class="pl-op ${marcado(o) ? "on" : ""}" role="${q.multi ? "checkbox" : "radio"}" aria-checked="${marcado(o)}" ${o.motivo && !marcado(o) ? 'disabled aria-disabled="true"' : ""} data-pl-p="${q.id}" data-pl-o="${o.id}">
+                <b>${esc(o.rotulo)}</b>${o.desc ? `<span>${esc(o.desc)}</span>` : ""}${o.motivo ? `<em>Incompatível: ${esc(o.motivo)}</em>` : ""}</button>`
+            )
+            .join("")}</div>
+        </section>`;
+      })
+      .join("");
+    const rec = PL.recomendar(e, AU, TIPOS_LOGICOS);
+    const desf = ultimasDesfeitas.length
+      ? `<div class="alerta aviso"><b>Escolhas desfeitas por incompatibilidade</b>${ultimasDesfeitas.map((x) => `<p>${esc(x.rotulo)}: ${esc(x.motivo)}</p>`).join("")}</div>`
+      : "";
+    ultimasDesfeitas = [];
+    return `<div class="planejador">
+      <div class="pl-topo"><div class="barra"><i style="width:${Math.round((respondidas / total) * 100)}%"></i></div><small>${respondidas} de ${total} respostas</small>
+        ${respondidas ? `<button type="button" class="link" data-pl-reiniciar>Recomeçar</button>` : ""}</div>
+      ${desf}
+      <div class="pl-grade">
+        <div class="pl-perguntas">${cards}</div>
+        <aside class="pl-painel"><h4>Caminho da pesquisa até agora</h4>${
+          rec.length ? rec.map((g) => `<div class="pl-rec"><b>${esc(g.titulo)}</b><ul>${g.itens.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div>`).join("") : `<p class="vazio">As recomendações aparecem conforme você responde.</p>`
+        }
+        ${completo ? `<button type="button" class="btn primario pequeno" data-pl-levar>Levar sugestões para as etapas</button><p class="nota">Preenche só campos vazios: tipo lógico, delineamento, análise, suficiência da amostra e teste estatístico.</p>` : ""}
+        </aside>
+      </div></div>`;
+  }
+  function levarPlano(p) {
+    const e = estadoPlano(p);
+    const rec = PL.recomendar(e, AU, TIPOS_LOGICOS);
+    const del = dadosEtapa(p, "pr-delineamento");
+    const pega = (t) => (rec.find((g) => g.titulo === t) || { itens: [] }).itens.join("\n");
+    const n = [];
+    if (!(del.analise || "").trim() && pega("Análise")) {
+      del.analise = pega("Análise");
+      n.push("análise de dados");
+    }
+    if (!(del.suficiencia || "").trim() && pega("Amostra")) {
+      del.suficiencia = pega("Amostra");
+      n.push("amostra e suficiência");
+    }
+    if ((e.tecnicas || []).length && !(del.procedimentos || "").trim()) {
+      const nomes = PL.PERGUNTAS.find((q) => q.id === "tecnicas").opcoes.filter((o) => e.tecnicas.includes(o.id)).map((o) => o.rotulo.toLowerCase());
+      del.procedimentos = `Técnicas de elaboração dos dados: ${nomes.join(", ")}. Fonte: ${{ campo: "pesquisa de campo", laboratorio: "laboratório", documental: "documental/corpus" }[e.fonte] || "—"}.\n[Descreva instrumentos, protocolos e o passo a passo.]`;
+      n.push("procedimentos");
+    }
+    const d2 = dadosEtapa(p, "p2");
+    const der = PL.perguntaEstatistica(e);
+    if (der.pergunta && !(d2.teste || {}).pergunta) {
+      d2.teste = { ...(d2.teste || {}), ...der };
+      n.push("teste estatístico");
+    }
+    p.atualizado = Date.now();
+    salvar();
+    aviso(n.length ? "Preenchido: " + n.join(", ") + "." : "Os campos dessas etapas já estavam preenchidos.");
   }
   function fundamentacaoHTML(p) {
     const tl = tipoLogico(p);
@@ -1041,6 +1174,30 @@
       const t = ev.target.closest("button");
       if (!t) return;
       const d = t.dataset;
+      if (d.plP) {
+        const e0 = estadoPlano(p);
+        const q = PL.PERGUNTAS.find((x) => x.id === d.plP);
+        let valor = d.plO;
+        if (q.multi) {
+          const l = e0[q.id] || [];
+          valor = l.includes(d.plO) ? l.filter((x) => x !== d.plO) : l.concat(d.plO);
+        } else if (e0[q.id] === d.plO) valor = "";
+        ultimasDesfeitas = responder(p, q.id, valor);
+        rerender();
+        return;
+      }
+      if (d.plReiniciar !== undefined) {
+        if (!(await confirma("Apagar todas as respostas do desenho da pesquisa? (o objetivo e o delineamento escolhidos também serão limpos)"))) return;
+        ["tipo", "modelo", "variavel"].forEach((k) => setResposta(p, k, ""));
+        dadosEtapa(p, "pr-desenho").plano = {};
+        salvar();
+        rerender();
+        return;
+      }
+      if (d.plLevar !== undefined) {
+        levarPlano(p);
+        return;
+      }
       if (d.add) {
         const c = campo(d.add);
         const l = getValor(p, e, c) || [];

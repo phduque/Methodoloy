@@ -142,6 +142,21 @@ const ETAPAS = [
     ],
   },
   {
+    id: "pr-desenho",
+    fase: "projeto",
+    titulo: "Desenho da pesquisa (assistente)",
+    fonte: `${PROJ}, caps. 4–5; ${AULA}`,
+    oque: [
+      "Responda às perguntas na ordem. Cada resposta abre a próxima e desativa as opções que deixaram de ser compatíveis, com o motivo.",
+      "Se mudar uma resposta anterior, as escolhas seguintes que ficarem incompatíveis são desfeitas e o assistente avisa.",
+      "Ao final, leve as sugestões para as etapas (objetivo, delineamento, análise, teste e gráficos já chegam filtrados).",
+    ],
+    porque:
+      "O delineamento é deduzido do objetivo: o tipo lógico, a possibilidade de intervir, a fonte dos dados e o tipo de generalização eliminam caminhos e deixam só os que podem, de fato, responder à pergunta.",
+    erros: ["Escolher a técnica (entrevista, questionário) antes de saber o que a pergunta exige.", "Prometer causa–efeito sem intervenção nem evento que isole a causa."],
+    campos: [{ id: "plano", tipo: "planejador", rotulo: "Desenho da pesquisa" }],
+  },
+  {
     id: "pr-tipo",
     fase: "projeto",
     titulo: "Variáveis, tipo lógico e objetivo",

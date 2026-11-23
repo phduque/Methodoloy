@@ -23,6 +23,7 @@ Para publicar on-line (opcional): ative o GitHub Pages neste repositório (Setti
 
 Recursos (incluindo o material das aulas de Metodologia da Pesquisa em Linguística Aplicada — PPgEL/UFRN, 2025.2):
 
+- **Desenho da pesquisa em funil** (nova etapa): perguntas encadeadas — o que se quer saber, tipo de dado, como a causa acontece, fonte, delineamento A–H, grupos, técnicas, generalização, tipo de variável. Cada resposta abre a próxima, desativa as opções incompatíveis com o motivo e desfaz escolhas posteriores que deixem de ser possíveis. Um painel mostra o caminho resultante (objetivo, amostra, suficiência, análise, teste, gráficos), e as etapas de delineamento, teste estatístico e gráficos passam a mostrar só as opções compatíveis.
 - **Parágrafo científico em 4 frases**: para cada item do outline — ideia essencial, item (“Mostrar que…”), frase-tópico, sustentação, especificação e transição —, com a função de cada frase explicada por seção e o botão “Montar parágrafo”.
 - **Roteiros de outline prontos**: Introdução (7 blocos), Marco Teórico (5), Métodos (objeto → delineamento → elaboração → análise), Resultados, Discussão (9 parágrafos) e Conclusão.
 - **Marco Teórico e Conclusão** como capítulos (trabalhos acadêmicos); **fundamentação do objetivo por tipo lógico**; hipótese com variável interferente, afetada e direção do efeito.
@@ -43,6 +44,7 @@ Recursos (incluindo o material das aulas de Metodologia da Pesquisa em Linguíst
 ```
 index.html          página do aplicativo
 css/estilo.css      aparência
+js/planejador.js    regras de compatibilidade do desenho da pesquisa (o funil)
 js/aulas.js         conteúdo das aulas (roteiros, frases, delineamentos, testes, gráficos, modelos)
 js/metodo.js        conteúdo metodológico (fases, etapas, campos) — edite aqui para ajustar o roteiro
 js/verificador.js   regras do verificador lógico/estilo
