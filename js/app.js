@@ -25,19 +25,139 @@
     const f = () => {
       try {
         localStorage.setItem(CHAVE, JSON.stringify(store));
-        marcarSalvo();
       } catch (e) {
-        aviso("Não foi possível salvar no navegador. Exporte um backup (.json).");
+        /* sem armazenamento local (janela privada, prévia): segue só na conta, se houver */
       }
+      marcarSalvo();
+      nuvem.agendar();
     };
     imediato ? f() : (timer = setTimeout(f, 400));
   }
   function marcarSalvo() {
     const el = $("#salvo");
     if (el) {
-      el.textContent = "Salvo " + new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+      el.textContent = (nuvem.ativo ? "Salvo na sua conta " : "Salvo neste navegador ") + new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
     }
   }
+
+  /* ------------------------- armazenamento na conta ------------------------- */
+  /* No visualizador de artefatos, cada pessoa guarda seus trabalhos numa área
+   * privada do banco do artefato (data/users/<id>/…): só ela os vê. Um
+   * documento por trabalho (dados gerais) e um por etapa (dados da etapa).
+   * Fora do visualizador, tudo fica só no navegador. */
+  const nuvem = {
+    ativo: false,
+    db: null,
+    uid: null,
+    ultimo: {}, // pid -> { chave: json já enviado }
+    rodando: false,
+    pendente: false,
+    timer: null,
+    async iniciar() {
+      const [db, user] = await Promise.all([usar("db"), usar("user")]);
+      if (!db || !user) return;
+      let id = null;
+      try {
+        id = await user.id();
+      } catch (e) {}
+      if (!id) return;
+      this.db = db;
+      this.uid = id;
+      let mudou = false;
+      try {
+        const snap = await db.collection(`data/users/${id}`).get();
+        for (const d of snap.docs) {
+          const meta = d.data();
+          if (!meta || !meta.meta) continue;
+          const local = store.projetos[d.id];
+          const etapas = await db.doc(`data/users/${id}/${d.id}`).collection("etapas").get();
+          const dados = {};
+          const ult = { __meta: JSON.stringify(meta) };
+          etapas.docs.forEach((e) => {
+            const v = e.data();
+            if (v) {
+              dados[e.id] = v.dados || {};
+              ult[e.id] = JSON.stringify(v.dados || {});
+            }
+          });
+          if (!local || (meta.atualizado || 0) >= (local.atualizado || 0)) {
+            store.projetos[d.id] = JSON.parse(JSON.stringify({ ...meta, dados }));
+            this.ultimo[d.id] = ult;
+            mudou = true;
+          }
+        }
+      } catch (e) {
+        return; // sem acesso à conta nesta visita: continua no navegador
+      }
+      this.ativo = true;
+      if (mudou) {
+        try {
+          localStorage.setItem(CHAVE, JSON.stringify(store));
+        } catch (e) {}
+        const foco = document.activeElement;
+        if (!foco || !/INPUT|TEXTAREA|SELECT/.test(foco.tagName)) rota();
+      }
+      marcarSalvo();
+      this.agendar();
+    },
+    marcarTudo(p) {
+      delete this.ultimo[p.id];
+    },
+    agendar() {
+      if (!this.ativo) return;
+      clearTimeout(this.timer);
+      this.timer = setTimeout(() => this.enviar(), 1200);
+    },
+    async enviar() {
+      if (this.rodando) {
+        this.pendente = true;
+        return;
+      }
+      this.rodando = true;
+      try {
+        for (const p of Object.values(store.projetos)) {
+          const ult = (this.ultimo[p.id] = this.ultimo[p.id] || {});
+          const base = `data/users/${this.uid}/${p.id}`;
+          const meta = { id: p.id, criado: p.criado, atualizado: p.atualizado || Date.now(), meta: p.meta, feito: p.feito || {} };
+          const jm = JSON.stringify(meta);
+          if (ult.__meta !== jm) {
+            await this.db.doc(base).set(meta);
+            ult.__meta = jm;
+          }
+          for (const [eid, dados] of Object.entries(p.dados || {})) {
+            const j = JSON.stringify(dados);
+            if (ult[eid] === j) continue;
+            try {
+              await this.db.doc(base).collection("etapas").doc(eid).set({ dados });
+              ult[eid] = j;
+            } catch (e) {
+              if (e && e.code === "invalid_argument") aviso("Uma etapa ficou grande demais para salvar na conta. Exporte um backup (.json).");
+              else throw e;
+            }
+          }
+        }
+      } catch (e) {
+        if (e && (e.code === "revoked" || e.code === "not_granted")) this.ativo = false;
+        else if (e && e.code === "quota_exceeded") aviso("O espaço de armazenamento está cheio. Exporte um backup e exclua trabalhos antigos.");
+      } finally {
+        this.rodando = false;
+        if (this.pendente) {
+          this.pendente = false;
+          this.agendar();
+        }
+      }
+    },
+    async apagar(p) {
+      if (!this.ativo) return;
+      delete this.ultimo[p.id];
+      const base = `data/users/${this.uid}/${p.id}`;
+      try {
+        const et = await this.db.doc(base).collection("etapas").get();
+        for (const d of et.docs) await this.db.doc(base).collection("etapas").doc(d.id).delete();
+        await this.db.doc(base).delete();
+      } catch (e) {}
+    },
+  };
 
   /* ------------------------------- utilidades ------------------------------- */
   const esc = (s) =>
@@ -74,8 +194,38 @@
     setTimeout(() => t.remove(), 3500);
   }
 
-  function baixar(nome, conteudo, tipo) {
-    const blob = new Blob([conteudo], { type: tipo });
+  function confirma(msg) {
+    return new Promise((res) => {
+      const fundo = document.createElement("div");
+      fundo.className = "dialogo-fundo";
+      fundo.innerHTML = `<div class="dialogo" role="dialog" aria-modal="true"><p></p><div class="botoes"><button type="button" class="btn" data-r="0">Cancelar</button><button type="button" class="btn primario" data-r="1">Confirmar</button></div></div>`;
+      fundo.querySelector("p").textContent = msg;
+      document.body.appendChild(fundo);
+      fundo.querySelector("[data-r='1']").focus();
+      fundo.addEventListener("click", (ev) => {
+        const b = ev.target.closest("[data-r]");
+        if (!b && ev.target !== fundo) return;
+        fundo.remove();
+        res(!!b && b.dataset.r === "1");
+      });
+    });
+  }
+
+  /* Recursos do visualizador de artefatos (claude.ai), quando existirem. */
+  const EM_ARTEFATO = !!(window.claude && typeof window.claude.use === "function");
+  const usar = (nome) => (EM_ARTEFATO ? Promise.resolve(window.claude.use(nome)).catch(() => null) : Promise.resolve(null));
+
+  async function baixar(nome, conteudo, tipo) {
+    const dl = await usar("downloads");
+    if (dl) {
+      try {
+        await dl.save({ filename: nome, data: conteudo instanceof Blob ? conteudo : new Blob([conteudo], { type: tipo }) });
+      } catch (e) {
+        if (!e || e.code !== "declined") aviso("Não foi possível salvar o arquivo aqui.");
+      }
+      return;
+    }
+    const blob = conteudo instanceof Blob ? conteudo : new Blob([conteudo], { type: tipo });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = nome;
@@ -96,7 +246,7 @@
 
   /* --------------------------------- rotas --------------------------------- */
   function rota() {
-    const h = location.hash.replace(/^#\/?/, "").split("/");
+    const h = rotaAtual.replace(/^#\/?/, "").split("/");
     if (h[0] === "p" && store.projetos[h[1]]) {
       const p = store.projetos[h[1]];
       store.atual = p.id;
@@ -110,8 +260,26 @@
     if (h[0] === "sobre") return telaSobre();
     return telaInicio();
   }
-  window.addEventListener("hashchange", rota);
-  const ir = (h) => (location.hash = h);
+  let rotaAtual = EM_ARTEFATO ? "#/" : location.hash || "#/";
+  function ir(h) {
+    rotaAtual = h;
+    if (!EM_ARTEFATO && location.hash !== h) {
+      location.hash = h; // o hashchange chama rota()
+      return;
+    }
+    rota();
+  }
+  if (!EM_ARTEFATO)
+    window.addEventListener("hashchange", () => {
+      rotaAtual = location.hash || "#/";
+      rota();
+    });
+  document.addEventListener("click", (ev) => {
+    const a = ev.target.closest('a[href^="#/"]');
+    if (!a || ev.button !== 0 || ev.metaKey || ev.ctrlKey) return;
+    ev.preventDefault();
+    ir(a.getAttribute("href"));
+  });
 
   /* ------------------------------ layout base ------------------------------ */
   function moldura(p, conteudo, etapaAtual) {
@@ -194,11 +362,12 @@
     $("#importar").onchange = importar;
     app.querySelectorAll("[data-apagar]").forEach(
       (b) =>
-        (b.onclick = () => {
+        (b.onclick = async () => {
           const p = store.projetos[b.dataset.apagar];
-          if (confirm(`Excluir “${p.meta.titulo || "Sem título"}”? Esta ação não pode ser desfeita.`)) {
+          if (await confirma(`Excluir “${p.meta.titulo || "Sem título"}”? Esta ação não pode ser desfeita.`)) {
             delete store.projetos[p.id];
             salvar(true);
+            nuvem.apagar(p);
             telaInicio();
           }
         })
@@ -209,11 +378,12 @@
     const f = ev.target.files[0];
     if (!f) return;
     const r = new FileReader();
-    r.onload = () => {
+    r.onload = async () => {
       try {
         const p = JSON.parse(r.result);
         if (!p.meta || !p.dados) throw new Error();
-        if (store.projetos[p.id] && !confirm("Já existe um trabalho com este identificador. Substituir?")) p.id = uid();
+        if (store.projetos[p.id] && !(await confirma("Já existe um trabalho com este identificador. Substituir?"))) p.id = uid();
+        nuvem.marcarTudo(p);
         p.feito = p.feito || {};
         store.projetos[p.id] = p;
         salvar(true);
@@ -867,7 +1037,7 @@
       agendarAlertas(p, e);
     });
 
-    form.addEventListener("click", (ev) => {
+    form.addEventListener("click", async (ev) => {
       const t = ev.target.closest("button");
       if (!t) return;
       const d = t.dataset;
@@ -902,7 +1072,7 @@
         rerender();
       } else if (d.usarHip !== undefined) {
         const o = getValor(p, e, porTipo("objetivo"));
-        if (val(p, "pr-tipo", "hipotese") && !confirm("Substituir a hipótese já escrita?")) return;
+        if (val(p, "pr-tipo", "hipotese") && !(await confirma("Substituir a hipótese já escrita?"))) return;
         dadosEtapa(p, "pr-tipo").hipotese = hipoteseSugerida(o);
         salvar();
         rerender();
@@ -912,14 +1082,14 @@
         const it = l[+d.olmontar];
         const novo = [it.topico, it.sustentacao, it.especificacao, it.transicao].map((x) => (x || "").trim()).filter(Boolean).join(" ");
         if (!novo) return aviso("Escreva ao menos a frase-tópico.");
-        if ((it.texto || "").trim() && it.texto.trim() !== novo && !confirm("Substituir o parágrafo final já escrito?")) return;
+        if ((it.texto || "").trim() && it.texto.trim() !== novo && !(await confirma("Substituir o parágrafo final já escrito?"))) return;
         it.texto = novo;
         setValor(p, e, c, l);
         rerender();
       } else if (d.olroteiro) {
         const c = porTipo("outline");
         const l = getValor(p, e, c) || [];
-        if (l.length && !confirm("Acrescentar o roteiro sugerido ao final dos parágrafos que você já tem?")) return;
+        if (l.length && !(await confirma("Acrescentar o roteiro sugerido ao final dos parágrafos que você já tem?"))) return;
         AU.ROTEIROS[d.olroteiro].forEach((r) => l.push({ ...r }));
         setValor(p, e, c, l);
         rerender();
@@ -928,7 +1098,7 @@
         const novo = AU.RESUMO_MOVIMENTOS.map(([k]) => (o[k] || "").trim()).filter(Boolean).join(" ");
         if (!novo) return aviso("Preencha ao menos um movimento.");
         const cr = campo("resumo");
-        if ((getValor(p, e, cr) || "").trim() && !confirm("Substituir o resumo já escrito?")) return;
+        if ((getValor(p, e, cr) || "").trim() && !(await confirma("Substituir o resumo já escrito?"))) return;
         setValor(p, e, cr, novo);
         rerender();
       } else if (d.gerarNota !== undefined) {
@@ -946,7 +1116,7 @@
         const rom = ["i", "ii", "iii", "iv", "v", "vi"];
         const itens = fs.map((f, i) => `(${rom[i]}) ${f}`);
         const lista = itens.length > 1 ? itens.slice(0, -1).join("; ") + "; e " + itens[itens.length - 1] : fs[0];
-        if ((o.texto || "").trim() && !confirm("Substituir o texto da declaração?")) return;
+        if ((o.texto || "").trim() && !(await confirma("Substituir o texto da declaração?"))) return;
         o.texto = AU.IA_MODELOS[o.modelo === "edicao" ? "edicao" : "apoio"].replace("{funcoes}", o.modelo === "edicao" ? fs.join(", ") : lista);
         setValor(p, e, c, o);
         rerender();
@@ -969,7 +1139,7 @@
       } else if (d.oldel) {
         const c = e.campos.find((x) => x.tipo === "outline");
         const l = getValor(p, e, c);
-        if ((l[+d.oldel].texto || "").trim() && !confirm("Remover este parágrafo e seu texto?")) return;
+        if ((l[+d.oldel].texto || "").trim() && !(await confirma("Remover este parágrafo e seu texto?"))) return;
         l.splice(+d.oldel, 1);
         setValor(p, e, c, l);
         rerender();
@@ -1189,29 +1359,119 @@
     return md;
   }
 
+  /* Gera um .docx de verdade (Word, LibreOffice, Google Docs) com JSZip. */
+  function blocosDocumento(p) {
+    const { ordem, s, nomes, acad } = montarDocumento(p);
+    const b = [];
+    let n = 0;
+    const paras = (t, tipo = "p") =>
+      String(t || "")
+        .split(/\n\s*\n|\n/)
+        .filter((x) => x.trim())
+        .forEach((x) => b.push({ tipo, texto: x.trim() }));
+    const h = (k) => (acad && !["resumo", "referencias", "ia"].includes(k) ? `${++n} ${nomes[k].toUpperCase()}` : nomes[k].toUpperCase());
+    ordem.forEach((k) => {
+      if (k === "titulo") {
+        b.push({ tipo: "titulo", texto: s.titulo || "[Título]" });
+        if (p.meta.autor) b.push({ tipo: "centro", texto: p.meta.autor });
+        if (acad && (p.meta.orientador || p.meta.instituicao))
+          b.push({ tipo: "centro", texto: [p.meta.orientador && "Orientação: " + p.meta.orientador, p.meta.instituicao].filter(Boolean).join(" · ") });
+      } else if (k === "resumo") {
+        b.push({ tipo: "h1", texto: "RESUMO" });
+        paras(s.resumo.texto, "semrecuo");
+        if (s.resumo.palavras) b.push({ tipo: "semrecuo", texto: "Palavras-chave: " + s.resumo.palavras, negritoInicio: "Palavras-chave:" });
+        if (s.resumo.abstract) {
+          b.push({ tipo: "h1", texto: "ABSTRACT" });
+          paras(s.resumo.abstract, "semrecuo");
+        }
+      } else if (k === "metodos") {
+        b.push({ tipo: "h1", texto: h(k) });
+        s.metodos.forEach(([sub, t]) => {
+          b.push({ tipo: "h2", texto: sub });
+          paras(t);
+        });
+      } else if (k === "resultados") {
+        b.push({ tipo: "h1", texto: h(k) });
+        paras(s.resultados.texto);
+        s.resultados.legendas.forEach((l) => b.push({ tipo: "legenda", texto: l }));
+      } else if (k === "conclusoes") {
+        b.push({ tipo: "h1", texto: h(k) });
+        s.conclusoes.forEach((c) => paras(c));
+      } else if (k === "referencias") {
+        b.push({ tipo: "h1", texto: h(k) });
+        s.referencias.forEach((r) => b.push({ tipo: "ref", texto: r }));
+      } else if (k === "ia") {
+        if (s.ia) {
+          b.push({ tipo: "h1", texto: h(k) });
+          paras(s.ia);
+        }
+      } else {
+        b.push({ tipo: "h1", texto: h(k) });
+        (s[k] || []).forEach((x) => paras(x));
+      }
+    });
+    return b;
+  }
+  async function gerarDocx(p) {
+    if (!window.JSZip) return null;
+    const x = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+    const run = (t, extra = "") => `<w:r><w:rPr>${extra}</w:rPr><w:t xml:space="preserve">${x(t)}</w:t></w:r>`;
+    const par = (bl) => {
+      const estilo = { titulo: "Title", h1: "Heading1", h2: "Heading2", legenda: "Caption", ref: "Bibliography", centro: "Centro", semrecuo: "SemRecuo" }[bl.tipo];
+      const pPr = estilo ? `<w:pPr><w:pStyle w:val="${estilo}"/></w:pPr>` : "";
+      if (bl.negritoInicio) return `<w:p>${pPr}${run(bl.negritoInicio, "<w:b/>")}${run(bl.texto.slice(bl.negritoInicio.length))}</w:p>`;
+      return `<w:p>${pPr}${run(bl.texto)}</w:p>`;
+    };
+    const W = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"';
+    const doc = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document ${W}><w:body>${blocosDocumento(p)
+      .map(par)
+      .join("")}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1701" w:right="1134" w:bottom="1134" w:left="1701" w:header="709" w:footer="709" w:gutter="0"/></w:sectPr></w:body></w:document>`;
+    const fonte = '<w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/>';
+    const est = (id, nome, ppr, rpr) =>
+      `<w:style w:type="paragraph" w:styleId="${id}"><w:name w:val="${nome}"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/><w:pPr>${ppr}</w:pPr><w:rPr>${rpr}</w:rPr></w:style>`;
+    const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles ${W}><w:docDefaults><w:rPrDefault><w:rPr>${fonte}<w:sz w:val="24"/><w:lang w:val="pt-BR"/></w:rPr></w:rPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/><w:pPr><w:spacing w:after="0" w:line="360" w:lineRule="auto"/><w:ind w:firstLine="709"/><w:jc w:val="both"/></w:pPr><w:rPr>${fonte}<w:sz w:val="24"/></w:rPr></w:style>${[
+      est("Title", "Title", '<w:spacing w:before="0" w:after="240"/><w:ind w:firstLine="0"/><w:jc w:val="center"/>', '<w:b/><w:caps/><w:sz w:val="28"/>'),
+      est("Heading1", "heading 1", '<w:keepNext/><w:spacing w:before="360" w:after="240"/><w:ind w:firstLine="0"/><w:jc w:val="left"/><w:outlineLvl w:val="0"/>', "<w:b/>"),
+      est("Heading2", "heading 2", '<w:keepNext/><w:spacing w:before="240" w:after="120"/><w:ind w:firstLine="0"/><w:jc w:val="left"/><w:outlineLvl w:val="1"/>', ""),
+      est("Caption", "caption", '<w:spacing w:before="60" w:after="120" w:line="240" w:lineRule="auto"/><w:ind w:firstLine="0"/><w:jc w:val="left"/>', '<w:sz w:val="20"/>'),
+      est("Bibliography", "Bibliography", '<w:spacing w:after="240" w:line="240" w:lineRule="auto"/><w:ind w:firstLine="0"/><w:jc w:val="left"/>', ""),
+      est("Centro", "Centralizado", '<w:ind w:firstLine="0"/><w:jc w:val="center"/>', ""),
+      est("SemRecuo", "Sem recuo", '<w:ind w:firstLine="0"/>', ""),
+    ].join("")}</w:styles>`;
+    const zip = new window.JSZip();
+    zip.file("[Content_Types].xml", '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>');
+    zip.file("_rels/.rels", '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>');
+    zip.file("word/_rels/document.xml.rels", '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>');
+    zip.file("word/document.xml", doc);
+    zip.file("word/styles.xml", styles);
+    return zip.generateAsync({ type: "blob", mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
+  }
+
   function telaDocumento(p) {
     moldura(
       p,
       `<div class="doc-barra"><h1>Documento final</h1>
         <div class="botoes">
-          <button class="btn primario" data-exp="doc">Baixar para Word (.doc)</button>
+          <button class="btn primario" data-exp="doc">Baixar para Word (.docx)</button>
           <button class="btn" data-exp="md">Markdown (.md)</button>
-          <button class="btn" data-exp="print">Imprimir / PDF</button>
+          ${EM_ARTEFATO ? "" : `<button class="btn" data-exp="print">Imprimir / PDF</button>`}
           <button class="btn leve" data-exp="json">Backup (.json)</button>
         </div></div>
-      <p class="nota">O documento é montado automaticamente, na ordem de leitura, a partir do que você redigiu nas etapas (que seguiram a ordem lógica, de trás para frente). Edite o conteúdo nas etapas correspondentes. Ao abrir no Word, aplique o modelo/normas da sua instituição ou revista.</p>
+      <p class="nota">O arquivo do Word sai com estilos (Título, Título 1 e 2, Legenda), Times New Roman 12, espaçamento 1,5, recuo de 1,25 cm e margens de 3 e 2 cm, pronto para você gerar o sumário e aplicar o modelo da instituição. O documento é montado automaticamente, na ordem de leitura, a partir do que você redigiu nas etapas (que seguiram a ordem lógica, de trás para frente). Edite o conteúdo nas etapas correspondentes. Ao abrir no Word, aplique o modelo/normas da sua instituição ou revista.</p>
       <article class="documento" id="documento">${docHTML(p)}</article>`
     );
     app.querySelectorAll("[data-exp]").forEach(
       (b) =>
-        (b.onclick = () => {
+        (b.onclick = async () => {
           const t = b.dataset.exp;
           if (t === "print") return window.print();
           if (t === "json") return baixar(nomeArquivo(p) + ".json", JSON.stringify(p, null, 2), "application/json");
           if (t === "md") return baixar(nomeArquivo(p) + ".md", docMarkdown(p), "text/markdown;charset=utf-8");
           const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><title>${esc(p.meta.titulo)}</title>
             <style>body{font-family:"Times New Roman",serif;font-size:12pt;line-height:1.5}h1{font-size:14pt;text-align:center}h2{font-size:12pt;text-transform:none;margin-top:18pt}h3{font-size:12pt;font-weight:normal;font-style:italic}p{text-align:justify;text-indent:1.25cm;margin:0 0 6pt}.doc-autor{text-align:center;text-indent:0}.ref{text-indent:0;text-align:left}.legenda{font-size:10pt;text-indent:0}</style></head><body>${docHTML(p, true)}</body></html>`;
-          baixar(nomeArquivo(p) + ".doc", "﻿" + html, "application/msword");
+          const docx = await gerarDocx(p).catch(() => null);
+          if (docx) return baixar(nomeArquivo(p) + ".docx", docx, docx.type);
+          baixar(nomeArquivo(p) + ".doc", "\ufeff" + html, "application/msword");
         })
     );
   }
@@ -1269,4 +1529,5 @@
   });
 
   rota();
+  nuvem.iniciar();
 })();
