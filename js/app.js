@@ -5,6 +5,7 @@
 (function () {
   const { TIPOS_TRABALHO, TIPOS_LOGICOS, FASES, ETAPAS, ESTRUTURA_DOC } = window.METODO;
   const V = window.VERIFICADOR;
+  const AU = window.AULAS;
   const CHAVE = "metodo-logico-v1";
   const $ = (s, el = document) => el.querySelector(s);
   const app = $("#app");
@@ -398,7 +399,7 @@
     const v = getValor(p, e, c);
     const id = `c-${c.id}`;
     const imp = c.importar && vazio(v) ? `<button type="button" class="link" data-importar="${c.id}">↧ Trazer do que já foi preenchido</button>` : "";
-    const cab = `<div class="rotulo"><label for="${id}">${esc(c.rotulo)}</label>${imp}</div>`;
+    const cab = `<div class="rotulo"><label for="${id}">${esc(c.rotulo)}</label>${imp}</div>${c.ajuda ? `<ul class="ajuda">${c.ajuda.map((a) => `<li>${esc(a)}</li>`).join("")}</ul>` : ""}`;
     switch (c.tipo) {
       case "text":
         return `<div class="campo">${cab}<input id="${id}" data-campo="${c.id}" value="${esc(v)}" placeholder="${esc(c.ph || "")}"></div>`;
@@ -424,6 +425,22 @@
         return `<div class="campo">${cab}${piramideEditor(v || { nos: [] })}</div>`;
       case "outline":
         return `<div class="campo">${cab}${outlineHTML(c, v || [])}</div>`;
+      case "delineamento":
+        return `<div class="campo">${cab}${delineamentoHTML(p, v)}</div>`;
+      case "teste":
+        return `<div class="campo">${cab}${testeHTML(v || {})}</div>`;
+      case "grafico":
+        return `<div class="campo">${cab}${graficoHTML(v || {})}</div>`;
+      case "fundamentacao":
+        return `<div class="campo">${cab}${fundamentacaoHTML(p)}</div>`;
+      case "resumo7":
+        return `<div class="campo">${cab}${resumo7HTML(v || {})}</div>`;
+      case "modelos-titulo":
+        return `<div class="campo">${cab}${modelosTituloHTML(p)}</div>`;
+      case "nota-qualificacao":
+        return `<div class="campo">${cab}<textarea id="${id}" data-campo="${c.id}" rows="5">${esc(v)}</textarea><button type="button" class="btn pequeno" data-gerar-nota>Gerar a partir das marcações acima</button></div>`;
+      case "declaracao-ia":
+        return `<div class="campo">${cab}${declaracaoIAHTML(v || {})}</div>`;
       case "referencias":
         return `<div class="campo">${cab}<p class="nota">Uma referência por linha, no formato da norma adotada (ABNT NBR 6023 ou da revista). A lista será ordenada alfabeticamente no documento.</p><textarea data-campo="${c.id}" data-refs="1" rows="12">${esc((v || []).join("\n"))}</textarea></div>`;
       default:
@@ -454,12 +471,21 @@
               <label>${rotA}<input data-obj="a" value="${esc(o.a)}"></label>
               ${o.tipo !== "descritiva" ? `<label>${rotB}<input data-obj="b" value="${esc(o.b)}"></label>` : "<span></span>"}
             </div>
+            ${o.tipo === "interferencia" ? `<label>Direção do efeito esperado<input data-obj="direcao" value="${esc(o.direcao)}" placeholder="Ex.: reduzindo a taxa de respostas corretas"></label>` : ""}
             <label>Fenômeno / população teórica (opcional)<input data-obj="f" value="${esc(o.f)}" placeholder="Ex.: peixes; leitores iniciantes; textos argumentativos"></label>
-            <div class="sugestao"><small>Sugestão gerada</small><p id="obj-sug">${esc(t.modelo(o.a, o.b, o.f))}</p><button type="button" class="btn pequeno" data-usar-sug>Usar sugestão</button></div>
+            <div class="sugestao"><small>Sugestão gerada</small><p id="obj-sug">${esc(t.modelo(o.a, o.b, o.f))}</p><button type="button" class="btn pequeno" data-usar-sug>Usar sugestão</button>
+              ${o.tipo !== "descritiva" ? `<small>Hipótese sugerida</small><p id="hip-sug">${esc(hipoteseSugerida(o))}</p><button type="button" class="btn pequeno" data-usar-hip>Usar como hipótese</button>` : ""}</div>
             <label>Objetivo (texto final)<textarea data-obj="texto" rows="3">${esc(o.texto)}</textarea></label>`
           : `<p class="nota">Escolha o tipo lógico para montar o objetivo.</p>`
       }
     </div>`;
+  }
+
+  function hipoteseSugerida(o) {
+    const a = o.a || "[variável A]",
+      b = o.b || "[variável B]";
+    if (o.tipo === "interferencia") return `${a.charAt(0).toUpperCase() + a.slice(1)} interfere em ${b}${o.direcao ? ", " + o.direcao : ""}${o.f ? " em " + o.f : ""}.`;
+    return `Há associação ${o.direcao || "positiva"} entre ${a} e ${b}${o.f ? " em " + o.f : ""}.`;
   }
 
   function resultadosHTML(c, lista) {
@@ -480,16 +506,119 @@
   }
 
   function outlineHTML(c, lista) {
+    const F = AU.FRASES[c.secao] || AU.FRASES.geral;
+    const roteiro = AU.ROTEIROS[c.secao];
+    const pendente = (it) => !((c.soTopicos ? it.topico : it.texto) || "").trim();
+    const aberto = lista.findIndex(pendente);
+    const ta = (i, k, rot, dica, rows, val) =>
+      `<label class="ol-campo"><span>${rot}</span>${dica ? `<small>${esc(dica)}</small>` : ""}<textarea rows="${rows}" data-ol="${i}" data-k="${k}">${esc(val)}</textarea></label>`;
     return `<div class="outline">${lista
       .map(
-        (it, i) => `<div class="ol-item">
-          <div class="ol-top"><span class="num">§${i + 1}</span><input data-ol="${i}" data-k="topico" value="${esc(it.topico)}" placeholder="Frase-tópico (afirmação)">
-          <span class="ops"><button type="button" class="icone" data-olmover="${i}" data-d="-1">↑</button><button type="button" class="icone" data-olmover="${i}" data-d="1">↓</button><button type="button" class="icone perigo" data-oldel="${i}">×</button></span></div>
-          ${c.soTopicos ? "" : `<textarea rows="5" data-ol="${i}" data-k="texto" placeholder="Parágrafo: comece pela frase-tópico e sustente-a com dados, exemplos ou literatura.">${esc(it.texto)}</textarea>`}
-        </div>`
+        (it, i) => `<details class="ol-item" ${lista.length <= 2 || i === aberto ? "open" : ""}>
+          <summary><span class="num">§${i + 1}</span><span class="ol-resumo">${esc(it.ideia || it.topico || it.item || "Novo parágrafo")}</span></summary>
+          <div class="ol-corpo">
+            <div class="ol-ops"><button type="button" class="icone" title="Subir" data-olmover="${i}" data-d="-1">↑</button><button type="button" class="icone" title="Descer" data-olmover="${i}" data-d="1">↓</button><button type="button" class="icone perigo" title="Remover" data-oldel="${i}">×</button></div>
+            <div class="duas">
+              <label class="ol-campo"><span>Ideia essencial</span><input data-ol="${i}" data-k="ideia" value="${esc(it.ideia)}" placeholder="palavra-chave: lacuna, relação com a teoria…"></label>
+              <label class="ol-campo"><span>Item do outline (raciocínio)</span><input data-ol="${i}" data-k="item" value="${esc(it.item)}" placeholder="Mostrar que… / Demonstrar que…"></label>
+            </div>
+            ${ta(i, "topico", "Frase-tópico", F.topico, 2, it.topico)}
+            ${
+              c.soTopicos
+                ? ""
+                : `${ta(i, "sustentacao", "Frases de sustentação", F.sustentacao, 3, it.sustentacao)}
+                   ${ta(i, "especificacao", "Frase de especificação", F.especificacao, 2, it.especificacao)}
+                   ${ta(i, "transicao", "Frase de transição", F.transicao, 2, it.transicao)}
+                   <div><button type="button" class="btn pequeno" data-olmontar="${i}">↧ Montar parágrafo com as frases acima</button></div>
+                   ${ta(i, "texto", "Parágrafo final (revise a fluidez: retome termos-chave, use conectores só quando necessário)", "", 6, it.texto)}`
+            }
+          </div>
+        </details>`
       )
-      .join("")}</div><button type="button" class="btn pequeno" data-oladd>+ Parágrafo</button>
-      ${c.soTopicos ? `<p class="nota">Aqui você planeja só as frases-tópico. Os parágrafos são redigidos na etapa seguinte.</p>` : ""}`;
+      .join("")}</div>
+      <div class="botoes"><button type="button" class="btn pequeno" data-oladd>+ Parágrafo</button>${
+        roteiro ? `<button type="button" class="btn pequeno" data-olroteiro="${c.secao}">Carregar roteiro sugerido (${roteiro.length} itens)</button>` : ""
+      }</div>
+      ${c.soTopicos ? `<p class="nota">Aqui você planeja ideia, item e frase-tópico. As frases de sustentação, especificação e transição são redigidas na etapa seguinte.</p>` : ""}`;
+  }
+
+  /* ---- Auxiliares das aulas ---- */
+  function tipoLogico(p) {
+    return (val(p, "pr-tipo", "objetivo") || {}).tipo;
+  }
+  function delineamentoHTML(p, v) {
+    const tl = tipoLogico(p);
+    const d = AU.DELINEAMENTOS.find((x) => x.id === v);
+    return `<select data-campo-delin>${["<option value=''>— escolha —</option>"]
+      .concat(
+        AU.DELINEAMENTOS.map(
+          (x) => `<option value="${x.id}" ${v === x.id ? "selected" : ""}>${esc(x.nome)}${tl && !x.tipos.includes(tl) ? " (não combina com seu tipo lógico)" : ""}</option>`
+        )
+      )
+      .join("")}</select>
+      ${d ? `<p class="nota">${esc(d.usa)}</p>` : ""}
+      ${!tl ? `<p class="nota">Defina o tipo lógico na etapa “Variáveis, tipo lógico e objetivo” para ver quais modelos combinam.</p>` : ""}`;
+  }
+  function testeHTML(v) {
+    const sel = (k, ops) =>
+      `<select data-teste="${k}"><option value="">—</option>${ops.map(([a, b]) => `<option value="${a}" ${v[k] === a ? "selected" : ""}>${esc(b)}</option>`).join("")}</select>`;
+    const rec = v.pergunta && v.variavel ? AU.recomendarTeste(v.pergunta, v.variavel, v.grupos || "2") : null;
+    const mostraGrupos = v.pergunta === "comparar" && v.variavel && v.variavel !== "nominal";
+    return `<div class="assistente">
+      <div class="tres">
+        <label>Pergunta${sel("pergunta", [["descrever", "Descrever um grupo"], ["comparar", "Comparar grupos"], ["relacionar", "Relacionar duas variáveis"]])}</label>
+        <label>Tipo da variável principal${sel("variavel", Object.entries(AU.VARIAVEIS).map(([k, x]) => [k, x.nome]))}</label>
+        ${mostraGrupos ? `<label>Grupos${sel("grupos", [["2", "Dois grupos independentes"], ["pareado", "Mesmo grupo antes × depois"], ["3", "Três ou mais grupos"]])}</label>` : "<span></span>"}
+      </div>
+      ${v.variavel ? `<p class="nota"><b>${esc(AU.VARIAVEIS[v.variavel].nome)}</b> (ex.: ${esc(AU.VARIAVEIS[v.variavel].ex)}): ${esc(AU.VARIAVEIS[v.variavel].pode)}.</p>` : ""}
+      ${
+        rec
+          ? `<div class="recomendacao"><dl>
+              <dt>Análise</dt><dd>${esc(rec.teste)}</dd>
+              <dt>Gráfico</dt><dd>${esc(rec.grafico)}</dd>
+              <dt>Como relatar</dt><dd><code>${esc(rec.relato)}</code></dd>
+              <dt>Na planilha</dt><dd><code>${esc(rec.planilha)}</code></dd></dl>
+              <p class="nota">p &lt; 0,05 é uma convenção: indica que o resultado é improvável por acaso, não que é importante nem que está “provado”. p ≥ 0,05 não prova ausência de efeito.</p></div>`
+          : ""
+      }</div>`;
+  }
+  function graficoHTML(v) {
+    const g = AU.GRAFICOS[v.objetivo];
+    return `<div class="assistente"><label>O que você quer mostrar?<select data-grafico><option value="">— escolha —</option>${AU.OBJETIVOS_GRAFICO.map(
+      ([k, n]) => `<option value="${k}" ${v.objetivo === k ? "selected" : ""}>${esc(n)}</option>`
+    ).join("")}</select></label>
+      ${g ? `<div class="recomendacao"><b>${esc(g.nome)}</b><p>${esc(g.leitura)}</p><p class="nota">Exemplo: ${esc(g.ex)}</p></div>` : ""}</div>`;
+  }
+  function fundamentacaoHTML(p) {
+    const tl = tipoLogico(p);
+    if (!tl) return `<p class="vazio">Defina o tipo lógico da pesquisa (etapa “Variáveis, tipo lógico e objetivo”) para ver o que a fundamentação precisa mostrar.</p>`;
+    return `<div class="recomendacao"><b>${esc(METODO.TIPOS_LOGICOS[tl].nome)}</b><ul>${AU.FUNDAMENTACAO[tl].map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
+      <p class="nota">A hipótese não é um item separado: entra como consequência da fundamentação, junto ao objetivo.</p></div>`;
+  }
+  function resumo7HTML(v) {
+    return `<div class="resumo7">${AU.RESUMO_MOVIMENTOS.map(
+      ([k, n, d]) => `<label class="ol-campo"><span>${n}</span><small>${esc(d)}</small><textarea rows="2" data-r7="${k}">${esc(v[k])}</textarea></label>`
+    ).join("")}<button type="button" class="btn pequeno" data-r7montar>↧ Montar resumo com os movimentos</button></div>`;
+  }
+  function modelosTituloHTML(p) {
+    const acad = TIPOS_TRABALHO[p.meta.tipo].academico;
+    return `<div class="tabela-rolavel"><table class="modelos"><thead><tr><th>Modelo</th><th>Estrutura</th><th>Exemplo</th></tr></thead><tbody>${AU.TITULO_MODELOS.map(
+      ([m, e, x]) => `<tr><td>${esc(m)}</td><td>${esc(e)}</td><td>${esc(x)}</td></tr>`
+    ).join("")}</tbody></table></div>
+    <p class="nota">${acad ? "Em teses e dissertações, prefira estes modelos: preciso, enxuto, sem adornos, refletindo a contribuição final." : "Em artigos, Volpato recomenda expor a principal novidade (a conclusão) no título; os modelos acima servem quando a revista prefere títulos descritivos."}</p>`;
+  }
+  function declaracaoIAHTML(v) {
+    return `<div class="assistente">
+      <label class="check"><input type="checkbox" data-ia="usou" ${v.usou ? "checked" : ""}> Usei ferramentas de IA neste trabalho</label>
+      ${
+        v.usou
+          ? `<div class="seg"><label><input type="radio" name="ia-modelo" data-ia="modelo" value="apoio" ${v.modelo !== "edicao" ? "checked" : ""}> Apoio técnico e editorial</label>
+             <label><input type="radio" name="ia-modelo" data-ia="modelo" value="edicao" ${v.modelo === "edicao" ? "checked" : ""}> Só edição do texto final</label></div>
+             <div class="checklist">${AU.IA_FUNCOES.map((f, i) => `<label><input type="checkbox" data-ia-funcao="${i}" ${(v.funcoes || [])[i] ? "checked" : ""}> ${esc(f)}</label>`).join("")}</div>
+             <button type="button" class="btn pequeno" data-ia-gerar>Gerar declaração</button>
+             <textarea rows="8" data-ia="texto">${esc(v.texto)}</textarea>`
+          : `<p class="nota">Se não usou IA, deixe desmarcado — nada será incluído no documento.</p>`
+      }</div>`;
   }
 
   /* ---- Pirâmide lógica ---- */
@@ -595,6 +724,8 @@
   function ligarCampos(p, e) {
     const form = $("#campos");
     const campo = (id) => e.campos.find((c) => c.id === id);
+    const porTipo = (t) => e.campos.find((x) => x.tipo === t);
+
     const rerender = () => {
       const y = window.scrollY;
       telaEtapa(p, e);
@@ -630,6 +761,8 @@
         setValor(p, e, c, o);
         const s = $("#obj-sug");
         if (s && TIPOS_LOGICOS[o.tipo]) s.textContent = TIPOS_LOGICOS[o.tipo].modelo(o.a, o.b, o.f);
+        const h = $("#hip-sug");
+        if (h) h.textContent = hipoteseSugerida(o);
       } else if (t.dataset.res) {
         const c = e.campos.find((x) => x.tipo === "resultados");
         const l = getValor(p, e, c) || [];
@@ -637,10 +770,25 @@
         if (r) r.texto = t.value;
         setValor(p, e, c, l);
       } else if (t.dataset.ol) {
-        const c = e.campos.find((x) => x.tipo === "outline");
+        const c = porTipo("outline");
         const l = getValor(p, e, c) || [];
         l[+t.dataset.ol][t.dataset.k] = t.value;
         setValor(p, e, c, l);
+        if (t.dataset.k === "ideia" || t.dataset.k === "topico") {
+          const r = t.closest(".ol-item").querySelector(".ol-resumo");
+          const it = l[+t.dataset.ol];
+          if (r) r.textContent = it.ideia || it.topico || it.item || "Novo parágrafo";
+        }
+      } else if (t.dataset.r7) {
+        const c = porTipo("resumo7");
+        const o = getValor(p, e, c) || {};
+        o[t.dataset.r7] = t.value;
+        setValor(p, e, c, o);
+      } else if (t.dataset.ia === "texto") {
+        const c = porTipo("declaracao-ia");
+        const o = getValor(p, e, c) || {};
+        o.texto = t.value;
+        setValor(p, e, c, o);
       } else if (t.dataset.notexto) {
         const pir = getValor(p, e, pc);
         pir.nos.find((n) => n.id === t.dataset.notexto).texto = t.value;
@@ -653,6 +801,32 @@
     form.addEventListener("change", (ev) => {
       const t = ev.target;
       if (t.dataset.campo && t.tagName === "SELECT") setValor(p, e, campo(t.dataset.campo), t.value);
+      else if (t.dataset.campoDelin !== undefined) {
+        setValor(p, e, porTipo("delineamento"), t.value);
+        rerender();
+      } else if (t.dataset.teste) {
+        const c = porTipo("teste");
+        const o = getValor(p, e, c) || {};
+        o[t.dataset.teste] = t.value;
+        setValor(p, e, c, o);
+        rerender();
+      } else if (t.dataset.grafico !== undefined) {
+        setValor(p, e, porTipo("grafico"), { objetivo: t.value });
+        rerender();
+      } else if (t.dataset.ia === "usou" || t.dataset.ia === "modelo") {
+        const c = porTipo("declaracao-ia");
+        const o = getValor(p, e, c) || {};
+        if (t.dataset.ia === "usou") o.usou = t.checked;
+        else o.modelo = t.value;
+        setValor(p, e, c, o);
+        if (t.dataset.ia === "usou") rerender();
+      } else if (t.dataset.iaFuncao) {
+        const c = porTipo("declaracao-ia");
+        const o = getValor(p, e, c) || {};
+        o.funcoes = o.funcoes || [];
+        o.funcoes[+t.dataset.iaFuncao] = t.checked;
+        setValor(p, e, c, o);
+      }
       else if (t.dataset.check) {
         const c = campo(t.dataset.check);
         const l = getValor(p, e, c) || [];
@@ -724,6 +898,56 @@
         const c = e.campos.find((x) => x.tipo === "objetivo");
         const o = getValor(p, e, c);
         o.texto = TIPOS_LOGICOS[o.tipo].modelo(o.a, o.b, o.f);
+        setValor(p, e, c, o);
+        rerender();
+      } else if (d.usarHip !== undefined) {
+        const o = getValor(p, e, porTipo("objetivo"));
+        if (val(p, "pr-tipo", "hipotese") && !confirm("Substituir a hipótese já escrita?")) return;
+        dadosEtapa(p, "pr-tipo").hipotese = hipoteseSugerida(o);
+        salvar();
+        rerender();
+      } else if (d.olmontar) {
+        const c = porTipo("outline");
+        const l = getValor(p, e, c);
+        const it = l[+d.olmontar];
+        const novo = [it.topico, it.sustentacao, it.especificacao, it.transicao].map((x) => (x || "").trim()).filter(Boolean).join(" ");
+        if (!novo) return aviso("Escreva ao menos a frase-tópico.");
+        if ((it.texto || "").trim() && it.texto.trim() !== novo && !confirm("Substituir o parágrafo final já escrito?")) return;
+        it.texto = novo;
+        setValor(p, e, c, l);
+        rerender();
+      } else if (d.olroteiro) {
+        const c = porTipo("outline");
+        const l = getValor(p, e, c) || [];
+        if (l.length && !confirm("Acrescentar o roteiro sugerido ao final dos parágrafos que você já tem?")) return;
+        AU.ROTEIROS[d.olroteiro].forEach((r) => l.push({ ...r }));
+        setValor(p, e, c, l);
+        rerender();
+      } else if (d.r7montar !== undefined) {
+        const o = getValor(p, e, porTipo("resumo7")) || {};
+        const novo = AU.RESUMO_MOVIMENTOS.map(([k]) => (o[k] || "").trim()).filter(Boolean).join(" ");
+        if (!novo) return aviso("Preencha ao menos um movimento.");
+        const cr = campo("resumo");
+        if ((getValor(p, e, cr) || "").trim() && !confirm("Substituir o resumo já escrito?")) return;
+        setValor(p, e, cr, novo);
+        rerender();
+      } else if (d.gerarNota !== undefined) {
+        const marc = val(p, e.id, "construcao") || [];
+        const secs = AU.QUALIFICACAO.construcao.filter((_, i) => marc[i]).map((x) => x.split(" (")[0]);
+        if (!secs.length) return aviso("Marque as seções que ainda estão em construção.");
+        const lista = secs.length > 1 ? secs.slice(0, -1).join(", ") + " e " + secs[secs.length - 1] : secs[0];
+        setValor(p, e, campo("nota"), AU.QUALIFICACAO.nota.replace("{secoes}", lista));
+        rerender();
+      } else if (d.iaGerar !== undefined) {
+        const c = porTipo("declaracao-ia");
+        const o = getValor(p, e, c) || {};
+        const fs = AU.IA_FUNCOES.filter((_, i) => (o.funcoes || [])[i]);
+        if (!fs.length) return aviso("Marque as funções em que a IA foi usada.");
+        const rom = ["i", "ii", "iii", "iv", "v", "vi"];
+        const itens = fs.map((f, i) => `(${rom[i]}) ${f}`);
+        const lista = itens.length > 1 ? itens.slice(0, -1).join("; ") + "; e " + itens[itens.length - 1] : fs[0];
+        if ((o.texto || "").trim() && !confirm("Substituir o texto da declaração?")) return;
+        o.texto = AU.IA_MODELOS[o.modelo === "edicao" ? "edicao" : "apoio"].replace("{funcoes}", o.modelo === "edicao" ? fs.join(", ") : lista);
         setValor(p, e, c, o);
         rerender();
       } else if (d.resadd !== undefined) {
@@ -804,25 +1028,49 @@
   function alertasDaEtapa(p, e) {
     const out = [];
     const tl = (val(p, "pr-tipo", "objetivo") || {}).tipo;
+    const acad = TIPOS_TRABALHO[p.meta.tipo].academico;
     if (e.id === "pr-tipo") {
       const o = val(p, "pr-tipo", "objetivo") || {};
       out.push(...V.objetivo(o.texto, o.tipo));
+      if (o.tipo && o.tipo !== "descritiva" && !(val(p, "pr-tipo", "hipotese") || "").trim())
+        out.push({ nivel: "info", regra: "Hipótese ausente", trecho: "—", dica: "Pesquisas de associação e de interferência precisam de hipótese (relação esperada entre variáveis)." });
+      if (o.tipo === "interferencia" && !(o.direcao || "").trim())
+        out.push({ nivel: "info", regra: "Direção do efeito", trecho: "—", dica: "Em interferência, explicite a variável interferente, a afetada e a direção do efeito (aumenta, reduz…)." });
     }
+    if (e.id === "pr-delineamento") out.push(...checarDelineamento(p));
+    if (e.id === "p16") out.push(...V.legendas(val(p, "p16", "legendas")));
+    if (e.id === "p17") out.push(...V.interpretacaoNosResultados(textoResultados(p)));
+    if (e.id === "p28") out.push(...V.palavrasChave(val(p, "p28", "palavras"), val(p, "p30", "titulo") || p.meta.titulo, val(p, "p24", "objetivo") || (val(p, "pr-tipo", "objetivo") || {}).texto, AU.PALAVRAS_GENERICAS));
     (e.checar || []).forEach((k) => {
       if (k === "estilo")
         e.campos.forEach((c) => {
           const v = getValor(p, e, c);
           if (typeof v === "string") out.push(...V.estilo(v));
-          if (Array.isArray(v) && c.tipo === "outline") v.forEach((it) => out.push(...V.estilo(it.texto || "")));
+          if (Array.isArray(v) && c.tipo === "outline")
+            v.forEach((it) => out.push(...V.estilo(textoItem(it))));
         });
       if (k === "conclusoes") out.push(...V.conclusoes(val(p, "p13", "conclusoes")));
       if (k === "objetivo") out.push(...V.objetivo(val(p, "p24", "objetivo"), tl));
-      if (k === "titulo") out.push(...V.titulo(val(p, "p30", "titulo")));
+      if (k === "titulo") out.push(...V.titulo(val(p, "p30", "titulo"), acad));
       if (k === "resumo") out.push(...V.resumo(val(p, "p28", "resumo"), p.meta.tipo).filter((a) => a.regra !== "Voz passiva" && a.regra !== "Impessoalidade"));
       if (k === "documento") verificarTudo(p).forEach((g) => g.alertas.forEach((a) => out.push({ ...a, regra: `${g.secao}: ${a.regra}` })));
     });
     if (e.id === "p5") out.push(...checarPiramide(val(p, "p5", "piramide")));
     return out;
+  }
+  function textoItem(x) {
+    return (x.texto || "").trim() ? x.texto : [x.topico, x.sustentacao, x.especificacao, x.transicao].filter(Boolean).join(" ");
+  }
+  function textoResultados(p) {
+    const l = val(p, "p17", "paragrafos") || [];
+    return l.map(textoItem).join(" ") + " " + (val(p, "p17", "texto") || "");
+  }
+  function checarDelineamento(p) {
+    const tl = tipoLogico(p);
+    const m = val(p, "pr-delineamento", "modelo");
+    const d = AU.DELINEAMENTOS.find((x) => x.id === m);
+    if (!tl || !d || d.tipos.includes(tl)) return [];
+    return [{ nivel: "aviso", regra: "Delineamento incoerente", trecho: d.nome, dica: `O modelo escolhido não corresponde ao tipo lógico “${TIPOS_LOGICOS[tl].nome}”. O delineamento deve ser deduzido do objetivo.` }];
   }
   function checarPiramide(pir) {
     const a = [];
@@ -850,7 +1098,14 @@
   function montarDocumento(p) {
     const acad = TIPOS_TRABALHO[p.meta.tipo].academico;
     const ordem = ESTRUTURA_DOC[acad ? "academico" : "artigo"];
-    const paras = (l) => (l || []).map((x) => (x.texto && x.texto.trim() ? x.texto : x.topico)).filter((x) => x && x.trim());
+    const paras = (l) =>
+      (l || [])
+        .map((x) =>
+          x.texto && x.texto.trim()
+            ? x.texto
+            : [x.topico, x.sustentacao, x.especificacao, x.transicao].map((y) => (y || "").trim()).filter(Boolean).join(" ")
+        )
+        .filter((x) => x && x.trim());
     const s = {};
     s.titulo = val(p, "p30", "titulo") || p.meta.titulo || "";
     s.resumo = { texto: val(p, "p28", "resumo") || "", palavras: val(p, "p28", "palavras") || "", abstract: val(p, "p28", "abstract") || "" };
@@ -863,11 +1118,16 @@
       ["Procedimentos", val(p, "p18", "procedimentos")],
       ["Análise dos dados", val(p, "p18", "analise")],
     ].filter(([, t]) => t && t.trim());
-    s.resultados = { texto: val(p, "p17", "texto") || "", legendas: (val(p, "p16", "legendas") || []).filter(Boolean) };
+    const pr = paras(val(p, "p17", "paragrafos"));
+    s.resultados = { texto: pr.length ? pr.join("\n\n") : val(p, "p17", "texto") || "", legendas: (val(p, "p16", "legendas") || []).filter(Boolean) };
     s.discussao = paras(val(p, "p19", "outline"));
-    s.conclusoes = (val(p, "p13", "conclusoes") || []).filter(Boolean);
+    s.marco = paras(val(p, "pmarco-outline", "outline"));
+    const pc = paras(val(p, "pconclusao", "outline"));
+    s.conclusoes = pc.length ? pc : (val(p, "p13", "conclusoes") || []).filter(Boolean);
+    const ia = val(p, "pia", "declaracao") || {};
+    s.ia = ia.usou && (ia.texto || "").trim() ? ia.texto : "";
     s.referencias = [...(val(p, "p27", "refs") || [])].sort((a, b) => a.localeCompare(b, "pt-BR"));
-    const nomes = { introducao: "Introdução", metodos: acad ? "Material e métodos" : "Métodos", resultados: "Resultados", discussao: "Discussão", conclusoes: "Conclusões", referencias: "Referências", resumo: "Resumo" };
+    const nomes = { marco: "Marco teórico", ia: "Declaração de uso de Inteligência Artificial", introducao: "Introdução", metodos: acad ? "Material e métodos" : "Métodos", resultados: "Resultados", discussao: "Discussão", conclusoes: "Conclusões", referencias: "Referências", resumo: "Resumo" };
     return { ordem, s, nomes, acad };
   }
 
@@ -880,7 +1140,7 @@
         .filter((x) => x.trim())
         .map((x) => `<p>${esc(x)}</p>`)
         .join("");
-    const h = (k) => (acad && k !== "resumo" && k !== "referencias" ? `${++n} ${nomes[k].toUpperCase()}` : nomes[k]);
+    const h = (k) => (acad && !["resumo", "referencias", "ia"].includes(k) ? `${++n} ${nomes[k].toUpperCase()}` : nomes[k]);
     const falta = (k) => (paraWord ? "" : `<p class="falta">[${nomes[k]} ainda não redigido(a)]</p>`);
     let out = "";
     ordem.forEach((k) => {
@@ -901,6 +1161,8 @@
         s.resultados.legendas.forEach((l) => (out += `<p class="legenda">${esc(l)}</p>`));
       } else if (k === "conclusoes") {
         out += `<h2>${h(k)}</h2>` + (s.conclusoes.length ? s.conclusoes.map((c) => `<p>${esc(c)}</p>`).join("") : falta(k));
+      } else if (k === "ia") {
+        if (s.ia) out += `<h2>${h(k)}</h2>${paragrafos(s.ia)}`;
       } else if (k === "referencias") {
         out += `<h2>${h(k)}</h2>` + (s.referencias.length ? s.referencias.map((r) => `<p class="ref">${esc(r)}</p>`).join("") : falta(k));
       } else {
@@ -921,6 +1183,7 @@
       else if (k === "resultados") md += `## Resultados\n\n${s.resultados.texto}\n\n` + s.resultados.legendas.map((l) => `*${l}*\n\n`).join("");
       else if (k === "conclusoes") md += `## Conclusões\n\n` + s.conclusoes.map((c, i) => `${i + 1}. ${c}`).join("\n") + "\n\n";
       else if (k === "referencias") md += `## Referências\n\n` + s.referencias.join("\n\n") + "\n";
+      else if (k === "ia") md += s.ia ? `\n## ${nomes.ia}\n\n${s.ia}\n` : "";
       else md += `## ${nomes[k]}\n\n` + s[k].join("\n\n") + "\n\n";
     });
     return md;
@@ -958,14 +1221,21 @@
     const tl = (val(p, "pr-tipo", "objetivo") || {}).tipo;
     const g = [];
     const add = (secao, etapa, alertas) => alertas.length && g.push({ secao, etapa, alertas });
-    add("Título", "p30", V.titulo(val(p, "p30", "titulo") || p.meta.titulo));
+    const acad = TIPOS_TRABALHO[p.meta.tipo].academico;
+    const est = (l) => (l || []).flatMap((x) => V.estilo(textoItem(x)));
+    add("Título", "p30", V.titulo(val(p, "p30", "titulo") || p.meta.titulo, acad));
+    add("Palavras-chave", "p28", V.palavrasChave(val(p, "p28", "palavras"), val(p, "p30", "titulo") || p.meta.titulo, val(p, "p24", "objetivo") || (val(p, "pr-tipo", "objetivo") || {}).texto, AU.PALAVRAS_GENERICAS));
+    add("Delineamento", "pr-delineamento", checarDelineamento(p));
     add("Resumo", "p28", V.resumo(val(p, "p28", "resumo"), p.meta.tipo));
     add("Objetivo", "p24", V.objetivo(val(p, "p24", "objetivo") || (val(p, "pr-tipo", "objetivo") || {}).texto, tl));
     add("Conclusões", "p13", V.conclusoes(val(p, "p13", "conclusoes")));
-    add("Introdução", "p26", (val(p, "p25", "outline") || []).flatMap((x) => V.estilo(x.texto || "")));
+    add("Introdução", "p26", est(val(p, "p25", "outline")));
+    if (acad) add("Marco teórico", "pmarco", est(val(p, "pmarco-outline", "outline")));
     add("Métodos", "p18", ["sujeito", "estrategia", "procedimentos", "analise"].flatMap((k) => V.estilo(val(p, "p18", k) || "")));
-    add("Resultados", "p17", V.estilo(val(p, "p17", "texto")));
-    add("Discussão", "p23", (val(p, "p19", "outline") || []).flatMap((x) => V.estilo(x.texto || "")));
+    add("Resultados", "p17", V.estilo(textoResultados(p)).concat(V.interpretacaoNosResultados(textoResultados(p))));
+    add("Figuras e tabelas", "p16", V.legendas(val(p, "p16", "legendas")));
+    add("Discussão", "p23", est(val(p, "p19", "outline")));
+    if (acad) add("Conclusão", "pconclusao", est(val(p, "pconclusao", "outline")));
     add("Pirâmide Lógica", "p5", checarPiramide(val(p, "p5", "piramide")));
     return g;
   }

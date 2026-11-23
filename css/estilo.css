@@ -263,3 +263,39 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--p
 }
 
 .form .btn, .campo > .btn { justify-self: start; }
+
+/* Componentes das aulas */
+.ajuda { margin: 0; padding: .5rem .8rem .5rem 1.8rem; background: var(--sup2); border: 1px dashed var(--borda); border-radius: 8px; font-size: .85rem; color: var(--tx2); }
+.ajuda li { margin: .1rem 0; }
+.ol-item { padding: 0; }
+.ol-item > summary { display: flex; gap: .6rem; align-items: center; padding: .6rem .8rem; cursor: pointer; font-weight: 600; list-style: none; }
+.ol-item > summary::-webkit-details-marker { display: none; }
+.ol-item > summary::before { content: "▸"; color: var(--tx2); transition: transform .15s; }
+.ol-item[open] > summary::before { transform: rotate(90deg); }
+.ol-item .num { padding: 0; color: var(--pri); font-weight: 700; }
+.ol-resumo { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ol-corpo { display: grid; gap: .6rem; padding: 0 .8rem .8rem; position: relative; }
+.ol-ops { display: flex; justify-content: flex-end; }
+.ol-campo { display: grid !important; gap: .2rem !important; }
+.ol-campo > span { font-weight: 700; font-size: .85rem; }
+.ol-campo > small { font-weight: 400; font-size: .8rem; line-height: 1.35; }
+.tres { display: grid; grid-template-columns: repeat(3, 1fr); gap: .8rem; }
+.assistente { display: grid; gap: .7rem; background: var(--sup); border: 1px solid var(--borda); border-radius: var(--raio); padding: .9rem; }
+.recomendacao { background: var(--pri-suave); border-radius: var(--raio); padding: .8rem 1rem; }
+.recomendacao p { margin: .3rem 0 0; }
+.recomendacao ul { margin: .4rem 0 0; padding-left: 1.2rem; }
+.recomendacao dl { display: grid; grid-template-columns: 130px 1fr; gap: .35rem .8rem; margin: 0; }
+.recomendacao dt { font-weight: 700; font-size: .88rem; }
+.recomendacao dd { margin: 0; }
+.resumo7 { display: grid; gap: .6rem; }
+.resumo7 .btn { justify-self: start; }
+.tabela-rolavel { overflow-x: auto; }
+table.modelos { width: 100%; border-collapse: collapse; font-size: .88rem; background: var(--sup); }
+table.modelos th, table.modelos td { border: 1px solid var(--borda); padding: .45rem .6rem; text-align: left; vertical-align: top; }
+table.modelos th { background: var(--sup2); }
+.check { display: flex !important; gap: .5rem; align-items: center; }
+.check input { width: auto; }
+@media (max-width: 860px) {
+  .tres { grid-template-columns: 1fr; }
+  .recomendacao dl { grid-template-columns: 1fr; }
+}

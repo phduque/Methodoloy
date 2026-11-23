@@ -21,7 +21,14 @@ Para publicar on-line (opcional): ative o GitHub Pages neste repositório (Setti
 | 5. Redação (de trás para frente) | conclusões → resultados → figuras/tabelas → métodos → discussão → objetivos → introdução → literatura → resumo → estilo → título | Passos 13–30 |
 | 6. Acabamento e debate | revisão, críticas, normas; cover letter, revisores e resposta (artigo) **ou** preparação da defesa (trabalhos acadêmicos); divulgação e impacto | Passos 31–40 |
 
-Recursos:
+Recursos (incluindo o material das aulas de Metodologia da Pesquisa em Linguística Aplicada — PPgEL/UFRN, 2025.2):
+
+- **Parágrafo científico em 4 frases**: para cada item do outline — ideia essencial, item (“Mostrar que…”), frase-tópico, sustentação, especificação e transição —, com a função de cada frase explicada por seção e o botão “Montar parágrafo”.
+- **Roteiros de outline prontos**: Introdução (7 blocos), Marco Teórico (5), Métodos (objeto → delineamento → elaboração → análise), Resultados, Discussão (9 parágrafos) e Conclusão.
+- **Marco Teórico e Conclusão** como capítulos (trabalhos acadêmicos); **fundamentação do objetivo por tipo lógico**; hipótese com variável interferente, afetada e direção do efeito.
+- **Delineamentos A–H** com checagem de coerência com o tipo lógico; critério de suficiência da amostra (estabilidade ou saturação).
+- **Assistente de teste estatístico** (pergunta × tipo de variável × grupos → análise, gráfico, forma de relatar, fórmula de planilha) e **assistente de escolha de gráfico** (barras, histograma, boxplot, dispersão, nuvem, similitude, AFC etc.).
+- **Resumo em 7 movimentos**, modelos de título (com subtítulo), checagem de palavras-chave, **preparação da qualificação** (com nota ao avaliador) e **declaração de uso de IA**.
 
 - **Guia em cada etapa**: o que fazer, por quê e armadilhas comuns, com a fonte (livro/passo).
 - **Construtor de objetivo** a partir do tipo lógico (descritiva, associação, causa–efeito).
@@ -36,6 +43,7 @@ Recursos:
 ```
 index.html          página do aplicativo
 css/estilo.css      aparência
+js/aulas.js         conteúdo das aulas (roteiros, frases, delineamentos, testes, gráficos, modelos)
 js/metodo.js        conteúdo metodológico (fases, etapas, campos) — edite aqui para ajustar o roteiro
 js/verificador.js   regras do verificador lógico/estilo
 js/app.js           interface, armazenamento e exportação
@@ -48,6 +56,7 @@ js/app.js           interface, armazenamento e exportação
 - VOLPATO, G. L. *Bases Teóricas para Redação Científica*.
 - VOLPATO, G. L. *Ciência: da filosofia à publicação*.
 - VOLPATO, G. L. *Estatística sem Dor*.
+- DUQUE, P. H. Metodologia da Pesquisa em Linguística Aplicada (material de aula). PPgEL/UFRN, 2025.2.
 - VOLPATO, G. L. The Logic of Scientific Writing. *Revista de Sistemas de Informação da FSMA*, n. 7, p. 2–5, 2011.
 
 Os textos do assistente são **resumos didáticos em paráfrase**, com indicação de fonte; não reproduzem as obras. Consulte os livros para o raciocínio completo e os exemplos.

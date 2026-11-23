@@ -52,7 +52,7 @@
     const sint = new Set();
     while ((m = PASSIVA_SINTETICA.exec(texto))) sint.add(m[0]);
     sint.forEach((p) =>
-      alertas.push({ nivel: "aviso", regra: "Impessoalidade", trecho: p, dica: "Construções como ‘observou-se’, ‘conclui-se’ sugerem que os dados impõem a conclusão. Considere a 1ª pessoa (‘observamos’, ‘concluímos’)." })
+      alertas.push({ nivel: "info", regra: "Impessoalidade", trecho: p, dica: "Volpato prefere a 1ª pessoa (‘observamos’, ‘concluímos’), pois o autor assume a interpretação. Muitos programas aceitam a forma impessoal (‘observa-se’): o importante é manter um padrão consistente e não usá-la para esconder quem conclui." })
     );
 
     PROLIXAS.forEach(([re, sug]) => {
@@ -70,17 +70,67 @@
       if (AMBIGUOS.test(f)) alertas.push({ nivel: "info", regra: "Referência ambígua", trecho: f.slice(0, 60) + "…", dica: "Pronome demonstrativo no início da frase: o leitor saberá exatamente a que se refere? Considere repetir o substantivo." });
     });
 
+    const REGRAS_AULAS = [
+      [/\b(neste|no presente) (parágrafo|capítulo|tópico|item|seção)[^.]{0,40}\b(trataremos|abordaremos|discutiremos|será (abordad|tratad|discutid))/gi, "Frase-tópico anunciativa", "Em vez de anunciar o assunto, afirme a ideia que o parágrafo vai demonstrar."],
+      [/\b[A-ZÁÉÍÓÚ][a-zà-ú]+( e [A-ZÁÉÍÓÚ][a-zà-ú]+| et al\.)? \(\d{4}[a-z]?\) (diz|dizem|afirma|afirmam|considera|consideram|pensa|pensam|acha|acham) que\b/g, "Citação apenas reportada", "A ideia é sua; o autor é a base. Ex.: “Metáforas são compreendidas aqui como estruturas conceptuais (Lakoff, 1993), o que explica…”"],
+      [/\bsegundo (diversos|vários|muitos|alguns) autores\b/gi, "Citação vaga", "Cite quem demonstrou o quê — ou elimine: uma citação genérica não sustenta nada."],
+      [/\b(como (podemos|pode-se) (ver|observar|notar)|vejamos( alguns exemplos)?)\b/gi, "Expressão informal", "Prefira “Observa-se que…” ou “A Figura 1 mostra que…”; o exemplo deve sustentar uma afirmação, não ser anunciado."],
+    ];
+    REGRAS_AULAS.forEach(([re, regra, dica]) => {
+      const achado = texto.match(re);
+      if (achado) achado.forEach((a) => alertas.push({ nivel: "aviso", regra, trecho: a, dica }));
+    });
+
     return alertas;
   }
 
-  function titulo(t) {
+  function palavrasChave(str, titulo, objetivo, genericas) {
+    const a = [];
+    if (!str || !str.trim()) return a;
+    const lista = str.split(/[;,.]/).map((x) => x.trim().toLowerCase()).filter(Boolean);
+    if (lista.length < 3 || lista.length > 5) a.push({ nivel: "aviso", regra: "Quantidade de palavras-chave", trecho: `${lista.length}`, dica: "Use de 3 a 5 palavras-chave." });
+    const gen = lista.filter((x) => (genericas || []).includes(x));
+    if (gen.length) a.push({ nivel: "aviso", regra: "Palavra-chave genérica", trecho: gen.join(", "), dica: "Termos amplos não indexam bem. Prefira o conceito central, a categoria analítica, o recorte e o método." });
+    const base = ((titulo || "") + " " + (objetivo || "")).toLowerCase();
+    if (base.trim()) {
+      const fora = lista.filter((x) => !x.split(/\s+/).some((w) => w.length > 3 && base.includes(w.slice(0, Math.max(4, w.length - 2)))));
+      if (fora.length) a.push({ nivel: "info", regra: "Palavra-chave fora do título/objetivo", trecho: fora.join(", "), dica: "Palavras-chave devem refletir conceitos que aparecem no título, no objetivo e no texto." });
+    }
+    return a;
+  }
+
+  function legendas(lista) {
+    const a = [];
+    (lista || []).forEach((l) => {
+      const semNumero = l.replace(/^\s*(figura|gráfico|grafico|tabela|quadro)\s*\d+\s*[.–—:-]?\s*/i, "");
+      if (contarPalavras(semNumero) < 4 || /^\s*(resultados?|dados|gráfico|figura)\s*\.?\s*$/i.test(semNumero))
+        a.push({ nivel: "aviso", regra: "Título vago", trecho: l.slice(0, 60), dica: "O título deve permitir entender o elemento fora do texto: conteúdo, variável e escopo (ex.: “Distribuição percentual das categorias argumentativas por grupo escolar”)." });
+    });
+    return a;
+  }
+
+  function interpretacaoNosResultados(texto) {
+    const m = (texto || "").match(/\b(confirma(m)?|corrobora(m)?|comprova(m)?|demonstra(m)? que|isso (se deve|ocorre porque)|explica-se|de acordo com [A-ZÁÉÍÓÚ][a-zà-ú]+ \(\d{4}\))/g);
+    return m
+      ? [{ nivel: "info", regra: "Interpretação nos Resultados", trecho: [...new Set(m)].join(", "), dica: "Resultados apresentam evidências; a interpretação e o confronto com teoria e literatura vão para a Discussão." }]
+      : [];
+  }
+
+  function titulo(t, academico) {
     const a = [];
     if (!t || !t.trim()) return a;
     const n = contarPalavras(t);
-    if (n > 15) a.push({ nivel: "aviso", regra: "Título longo", trecho: `${n} palavras`, dica: "Faça o título o mais curto possível, mantendo a novidade." });
+    if (n > (academico ? 25 : 15)) a.push({ nivel: "aviso", regra: "Título longo", trecho: `${n} palavras`, dica: "Faça o título o mais curto possível, mantendo a novidade." });
     if (METODO_TITULO.test(t)) a.push({ nivel: "aviso", regra: "Título descritivo", trecho: t.match(METODO_TITULO)[0], dica: "Exponha a descoberta/conclusão em vez de descrever a atividade (‘Estudo de…’)." });
     const loc = t.match(LOCAL);
-    if (loc) a.push({ nivel: "aviso", regra: "Foco na amostra", trecho: loc.join(", "), dica: "Foque no fenômeno, não no local da coleta — salvo se o local for o próprio objeto teórico." });
+    if (loc)
+      a.push(
+        academico
+          ? { nivel: "info", regra: "Recorte no título", trecho: loc.join(", "), dica: "Em trabalhos acadêmicos o recorte empírico pode estar no título ou no subtítulo; confira se ele é necessário e se o foco continua no objeto teórico." }
+          : { nivel: "aviso", regra: "Foco na amostra", trecho: loc.join(", "), dica: "Foque no fenômeno, não no local da coleta — salvo se o local for o próprio objeto teórico." }
+      );
+    const partes = t.split(":");
+    if (partes.length > 1 && contarPalavras(partes.slice(1).join(":")) > 20) a.push({ nivel: "aviso", regra: "Subtítulo longo", trecho: `${contarPalavras(partes.slice(1).join(":"))} palavras`, dica: "Subtítulo = COMO/ONDE, em até ~1,5 linha, sem detalhes metodológicos excessivos." });
     const ab = (t.match(ABREV) || []).filter((x) => !["DNA", "RNA"].includes(x));
     if (ab.length) a.push({ nivel: "aviso", regra: "Abreviaturas", trecho: ab.join(", "), dica: "Evite abreviaturas no título, mesmo as comuns na área." });
     if (/\b(versus|vs\.?|compara[cç][aã]o|comparativ[oa])\b/i.test(t)) a.push({ nivel: "info", regra: "Comparação no título", trecho: "comparação", dica: "Prefira a lógica da conclusão à descrição da comparação feita." });
@@ -127,5 +177,5 @@
     return a;
   }
 
-  window.VERIFICADOR = { estilo, titulo, resumo, conclusoes, objetivo, contarPalavras };
+  window.VERIFICADOR = { estilo, titulo, resumo, conclusoes, objetivo, palavrasChave, legendas, interpretacaoNosResultados, contarPalavras };
 })();

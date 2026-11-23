@@ -17,6 +17,7 @@ const GUIA = "Volpato — Guia Prático para Redação Científica";
 const PROJ = "Volpato & Barreto — Elabore Projetos Científicos Competitivos";
 const BASES = "Volpato — Bases Teóricas para Redação Científica";
 const EST = "Volpato — Estatística sem Dor";
+const AULA = window.AULAS.FONTE;
 
 const TIPOS_TRABALHO = {
   tcc: { nome: "TCC", academico: true },
@@ -144,11 +145,12 @@ const ETAPAS = [
     id: "pr-tipo",
     fase: "projeto",
     titulo: "Variáveis, tipo lógico e objetivo",
-    fonte: `${PROJ}, cap. 4; ${BASES}`,
+    fonte: `${PROJ}, cap. 4; ${BASES}; ${AULA}`,
     oque: [
-      "Liste as variáveis que você vai estudar.",
+      "Liste as variáveis que você vai estudar (teóricas e, depois, como cada uma será observada).",
       "Classifique a pesquisa num dos três tipos lógicos: descritiva, associação sem interferência ou associação com interferência (causa–efeito).",
       "Escreva o objetivo teórico com o verbo coerente com esse tipo lógico. O assistente gera uma proposta que você pode editar.",
+      "Com hipótese, o objetivo costuma trazer um “se…” (testar se…). Em interferência, deixe explícitas a variável interferente, a variável afetada e a direção do efeito.",
     ],
     porque:
       "Todo objetivo empírico cai numa de três lógicas. Descrever não exige hipótese; testar associação ou interferência exige. Um objetivo bem classificado determina o delineamento, a análise e o tipo de conclusão possível — e evita prometer causa quando o estudo só permite associação.",
@@ -160,7 +162,7 @@ const ETAPAS = [
     campos: [
       { id: "variaveis", tipo: "list", rotulo: "Variáveis do estudo", ph: "Ex.: cor do ambiente; ingestão de alimento" },
       { id: "objetivo", tipo: "objetivo", rotulo: "Construtor de objetivo" },
-      { id: "hipotese", tipo: "textarea", rotulo: "Hipótese (se não for descritiva)", ph: "Ex.: A luz vermelha aumenta a ingestão alimentar." },
+      { id: "hipotese", tipo: "textarea", rotulo: "Hipótese (se não for descritiva)", ph: "Ex.: O aumento da carga de memória interfere na precisão dos julgamentos de gramaticalidade, reduzindo a taxa de respostas corretas." },
       { id: "especificos", tipo: "list", rotulo: "Objetivos específicos (se o seu programa exigir)", ph: "Cada um também deve ter um tipo lógico claro." },
     ],
   },
@@ -168,12 +170,14 @@ const ETAPAS = [
     id: "pr-delineamento",
     fase: "projeto",
     titulo: "Delineamento deduzido do objetivo",
-    fonte: `${PROJ}, cap. 5; ${EST}`,
+    fonte: `${PROJ}, cap. 5; ${EST}; ${AULA}`,
     oque: [
       "Descritiva: defina as variáveis a descrever, o tamanho da amostra e como obter a amostra sem viés (aleatorização, estratificação).",
       "Com hipótese: defina variável independente e dependente, grupos/condições, controles, aleatorização, réplicas e o que precisa ser mantido constante.",
       "Separe a estratégia (delineamento, nível das ideias) dos procedimentos específicos (técnicas, questionários, equipamentos).",
+      "Escolha o modelo técnico de delineamento (A–H) compatível com o tipo lógico.",
       "Planeje a análise de dados já aqui — ela decorre do delineamento.",
+      "Defina o critério de suficiência da amostra: estabilidade dos resultados (quantitativo) ou saturação teórica (qualitativo). Não existe “número mágico”.",
     ],
     porque:
       "O delineamento é a estratégia intelectual para descrever ou testar a hipótese. Ele é deduzido do objetivo: se o objetivo está claro, o delineamento praticamente se impõe. Muitos confundem delineamento com técnica de medida.",
@@ -184,10 +188,12 @@ const ETAPAS = [
     ],
     campos: [
       { id: "sujeito", tipo: "textarea", rotulo: "Sujeito / população / corpus do estudo" },
+      { id: "modelo", tipo: "delineamento", rotulo: "Modelo de delineamento (A–H)" },
       { id: "estrategia", tipo: "textarea", rotulo: "Estratégia (grupos, condições, controles, aleatorização, réplicas)" },
       { id: "amostra", tipo: "textarea", rotulo: "Tamanho amostral e justificativa", ph: "Ex.: N=20 por grupo, compatível com estudos publicados (15–25)." },
       { id: "procedimentos", tipo: "textarea", rotulo: "Procedimentos específicos (como medir cada variável)" },
       { id: "analise", tipo: "textarea", rotulo: "Análise de dados planejada" },
+      { id: "suficiencia", tipo: "textarea", rotulo: "Critério de suficiência da amostra", ph: "Ex.: coleta em blocos de 5 casos até a média variar menos de 5% entre blocos; ou saturação teórica — encerrar quando novas entrevistas não trouxerem categorias novas." },
     ],
   },
   {
@@ -248,16 +254,20 @@ const ETAPAS = [
     passo: 2,
     fase: "execucao",
     titulo: "Analise os resultados",
-    fonte: `${GUIA}, Passo 2; ${EST}`,
+    fonte: `${GUIA}, Passo 2; ${EST}; ${AULA}`,
     oque: [
       "Faça você mesmo a análise: o estatístico ajuda na técnica, mas quem sabe o que perguntar aos dados é o pesquisador.",
       "Olhe os dados por vários ângulos antes de decidir o que eles dizem.",
+      "Defina o nível da análise: descritivo (o que vejo?), inferencial (o que posso afirmar sobre a população?) ou explicativo (há relação entre variáveis?).",
+      "Escolha o teste pela pergunta + tipo de variável + delineamento — nunca pelo software.",
     ],
     porque:
       "O salto dos dados às conclusões não é automático: envolve técnica, criatividade e ousadia. Muitos manuscritos 'renascem' quando os dados são vistos de outro ângulo.",
     erros: [
       "Mandar a planilha ao estatístico com um 'analisa pra mim?'.",
       "Concluir ausência de efeito apenas porque a média não diferiu (ausência de evidência não é evidência de ausência).",
+      "Calcular média de variável nominal ou ordinal.",
+      "Ler p < 0,05 como prova ou como medida de importância; ler p ≥ 0,05 como prova de que não há relação.",
     ],
     campos: [
       {
@@ -274,6 +284,7 @@ const ETAPAS = [
           "Resultados que contrariam a expectativa",
         ],
       },
+      { id: "teste", tipo: "teste", rotulo: "Assistente de escolha do teste estatístico" },
       { id: "notas", tipo: "textarea", rotulo: "Anotações da análise", grande: true },
     ],
   },
@@ -497,22 +508,29 @@ const ETAPAS = [
     passo: 15,
     fase: "redacao",
     titulo: "Defina a melhor forma de apresentar cada resultado",
-    fonte: `${GUIA}, Passo 15`,
+    fonte: `${GUIA}, Passo 15; ${AULA}`,
     oque: [
       "Resultados mais fortes → figuras (chamam atenção).",
       "Coadjuvantes → texto ou tabela (formato menos chamativo).",
+      "Tabela = números exatos; gráfico = padrão visual (tendência, comparação, proporção); quadro = texto qualitativo; figura = processo/estrutura.",
+      "Dois ou três números simples não pedem gráfico: use o texto.",
     ],
     porque: "A forma de apresentação comunica a importância relativa de cada evidência.",
     erros: ["Repetir o mesmo dado em tabela, figura e texto."],
-    campos: [{ id: "formas", tipo: "list", rotulo: "Resultado → forma (figura / tabela / texto)", ph: "Ingestão por cor → Figura 1" }],
+    campos: [
+      { id: "escolha", tipo: "grafico", rotulo: "Qual gráfico ou elemento usar?" },
+      { id: "formas", tipo: "list", rotulo: "Resultado → forma (figura / tabela / quadro / texto)", ph: "Ingestão por cor → Figura 1 (barras com erro-padrão)" },
+    ],
   },
   {
     id: "p16",
     passo: 16,
     fase: "redacao",
     titulo: "Faça figuras e tabelas",
-    fonte: `${GUIA}, Passo 16`,
+    fonte: `${GUIA}, Passo 16; ${AULA}`,
     oque: [
+      "Ordem: apresente o dado no texto → insira a tabela/figura → comente o que o leitor deve observar.",
+      "Título autoexplicativo (conteúdo, variável e escopo). Ruim: “Gráfico 1 – Resultados”. Melhor: “Gráfico 1 – Distribuição percentual das categorias argumentativas por grupo escolar”.",
       "Durante a imersão basta um esboço indicando o que será enfatizado; o acabamento vem depois.",
       "Escreva as legendas. Indique significância estatística no gráfico/tabela e o teste na legenda.",
       "O leitor deve captar a informação principal sem estudar o gráfico.",
@@ -530,20 +548,26 @@ const ETAPAS = [
     oque: [
       "Escreva o texto dos resultados na sequência definida no Passo 14.",
       "Destaque o que importa para as conclusões; refira figuras e tabelas sem repetir todos os números.",
+      "Cada parágrafo é uma constatação empírica: tópico (dado principal) → sustentação (tabela, números, excertos) → especificação (padrões, recortes) → transição.",
+      "Use “Observa-se que…” ou “A Figura 1 mostra que…”, não “como podemos ver”.",
     ],
     porque: "A seção de resultados apresenta a base empírica das conclusões — nem mais, nem menos.",
     erros: ["Discutir ou interpretar com literatura na seção de resultados (a menos que o veículo junte Resultados e Discussão)."],
     checar: ["estilo"],
-    campos: [{ id: "texto", tipo: "textarea", rotulo: "Resultados", grande: true, secao: "resultados" }],
+    campos: [
+      { id: "paragrafos", tipo: "outline", secao: "resultados", rotulo: "Parágrafos dos Resultados" },
+      { id: "texto", tipo: "textarea", rotulo: "…ou redija em texto corrido (usado se não houver parágrafos acima)", grande: true },
+    ],
   },
   {
     id: "p18",
     passo: 18,
     fase: "redacao",
     titulo: "Redija os Métodos",
-    fonte: `${GUIA}, Passo 18`,
+    fonte: `${GUIA}, Passo 18; ${AULA}`,
     oque: [
-      "Escreva separadamente: (a) sujeito do estudo; (b) estratégia/delineamento; (c) procedimentos específicos; (d) análise dos dados.",
+      "Escreva separadamente: (a) objeto de estudo; (b) delineamento; (c) elaboração dos dados; (d) análise dos dados.",
+      "Não é lista técnica: é a demonstração lógica de que a estratégia empírica responde à pergunta (objeto → pergunta → delineamento → elaboração → análise → resposta).",
       "Inclua só os procedimentos que geraram os dados apresentados (e os que possam ter afetado o sujeito estudado).",
       "Organize na sequência mais fácil para o leitor.",
     ],
@@ -551,10 +575,14 @@ const ETAPAS = [
     erros: ["Incluir informação que não sustenta nada (nome do laboratório, marcas irrelevantes).", "Misturar delineamento com detalhes de técnica."],
     checar: ["estilo"],
     campos: [
-      { id: "sujeito", tipo: "textarea", rotulo: "Sujeito do estudo", importar: "pr-delineamento.sujeito" },
-      { id: "estrategia", tipo: "textarea", rotulo: "Estratégia da pesquisa (delineamento)", importar: "pr-delineamento.estrategia" },
-      { id: "procedimentos", tipo: "textarea", rotulo: "Procedimentos específicos", importar: "pr-delineamento.procedimentos", grande: true },
-      { id: "analise", tipo: "textarea", rotulo: "Análise dos dados", importar: "pr-delineamento.analise" },
+      { id: "sujeito", tipo: "textarea", rotulo: "(a) Objeto de estudo", importar: "pr-delineamento.sujeito", grande: true,
+        ajuda: ["Fenômeno ou unidade empírica observada", "Fontes: campo, laboratório ou bibliográfica/documental", "Contexto: local, instituição, período", "Unidade de análise", "População, amostra, inclusão/exclusão, estratégia de amostragem e representatividade"] },
+      { id: "estrategia", tipo: "textarea", rotulo: "(b) Delineamento da pesquisa", importar: "pr-delineamento.estrategia", grande: true,
+        ajuda: ["Tipo lógico (caracterização, associação sem / com interferência)", "Modelo técnico (A–H) e por que é o mais coerente", "Variáveis teóricas e operacionais", "Coerência entre modelo e hipótese"] },
+      { id: "procedimentos", tipo: "textarea", rotulo: "(c) Elaboração dos dados", importar: "pr-delineamento.procedimentos", grande: true,
+        ajuda: ["Técnicas: documentação direta (entrevista, observação, questionário) ou indireta (documentos, corpus)", "Instrumentos e protocolos (roteiros, fichas, softwares)", "Procedimentos passo a passo, em ordem cronológica", "Critérios éticos (consentimento, anonimato, comitê) e de confiabilidade", "Contexto da produção dos dados e limites"] },
+      { id: "analise", tipo: "textarea", rotulo: "(d) Análise dos dados", importar: "pr-delineamento.analise", grande: true,
+        ajuda: ["Tipo de análise (qualitativa, quantitativa, mista) coerente com o tipo lógico", "Procedimentos passo a passo e justificativa da técnica", "Softwares (NVivo, IRaMuTeQ, R, JASP, Excel…) com papel limitado", "Validação: dupla codificação, triangulação, saturação; pressupostos, alfa de Cronbach", "Como a análise responde à pergunta / testa a hipótese"] },
     ],
   },
   {
@@ -562,10 +590,12 @@ const ETAPAS = [
     passo: 19,
     fase: "redacao",
     titulo: "Faça o outline da Discussão",
-    fonte: `${GUIA}, Passo 19`,
+    fonte: `${GUIA}, Passo 19; ${AULA}`,
     oque: [
       "Cada item do outline é uma frase-tópico afirmativa que se tornará um parágrafo.",
       "Sugestão de sequência: (1) principais conclusões e generalização; (2) validade dos métodos e resultados; (3) argumentos que sustentam cada conclusão; (4) o que muda na ciência; (5) limitações como portas para estudos futuros.",
+      "Roteiro das aulas (9 parágrafos): retomada → inferência lógica → validação pela teoria → diálogo com a literatura → justificação das divergências → limites → implicações → novas perguntas → fechamento. Use “Carregar roteiro sugerido”.",
+      "Para cada item, escreva a ideia essencial, o item do outline (“Mostrar que…”) e a frase-tópico (a afirmação).",
     ],
     porque: "A Discussão defende as conclusões: mostra por que são válidas e como alteram o conhecimento atual.",
     erros: ["Discussão que compara resultado a resultado com a literatura ('concordando com Fulano…') sem argumentar."],
@@ -627,15 +657,31 @@ const ETAPAS = [
     passo: 23,
     fase: "redacao",
     titulo: "Redija a Discussão",
-    fonte: `${GUIA}, Passo 23`,
+    fonte: `${GUIA}, Passo 23; ${AULA}`,
     oque: [
-      "Redija cada parágrafo a partir das frases-tópico do outline (Passo 19).",
+      "Redija cada parágrafo a partir das frases-tópico do outline (Passo 19): tópico → sustentação → especificação → transição. Use “Montar parágrafo” e depois ajuste o texto.",
+      "A citação nunca é o centro da frase: a ideia é sua; o autor citado é a base ou o contraste. Evite “Fulano diz que…”.",
       "Verifique se os parágrafos se conectam entre si e com a Pirâmide Lógica.",
     ],
     porque: "Parágrafos conclusivos, com informações conectadas, constroem a defesa das conclusões.",
     erros: [],
     checar: ["estilo"],
     campos: [{ id: "outline", tipo: "outline", rotulo: "Parágrafos da Discussão", compartilhado: "p19", secao: "discussao" }],
+  },
+  {
+    id: "pconclusao",
+    fase: "redacao",
+    titulo: "Redija a Conclusão",
+    fonte: `${AULA}; ${GUIA}, Passo 13`,
+    apenas: ["tcc", "monografia", "dissertacao", "tese"],
+    oque: [
+      "Responda sinteticamente à pergunta científica, retome os resultados e argumentos que sustentam a resposta, explicite a contribuição e aponte novas investigações.",
+      "Use as conclusões do Passo 13 (da mais geral para as mais restritas) como eixo.",
+    ],
+    porque: "A conclusão fecha o raciocínio lógico: mostra a relação necessária entre dados, teoria e implicações — o que a pesquisa acrescenta ao conhecimento.",
+    erros: ["Repetir os resultados em detalhe.", "Trazer informação nova que não foi discutida.", "Conclusões no passado quando se referem ao fenômeno em geral."],
+    checar: ["estilo"],
+    campos: [{ id: "outline", tipo: "outline", secao: "conclusao", rotulo: "Parágrafos da Conclusão" }],
   },
   {
     id: "p24",
@@ -657,27 +703,71 @@ const ETAPAS = [
     passo: 25,
     fase: "redacao",
     titulo: "Faça o outline da Introdução",
-    fonte: `${GUIA}, Passo 25`,
+    fonte: `${GUIA}, Passo 25; ${AULA}`,
     oque: [
       "Selecione só as informações necessárias para fundamentar o objetivo.",
+      "Roteiro das aulas (7 blocos): fenômeno e relevância → conhecimento essencial → estado da arte → lacuna → objeto → tipo de pesquisa e recortes → objetivo (e hipótese).",
       "Organize do contexto amplo para a lacuna e daí para o objetivo (funil).",
       "Explique por que vale relacionar as variáveis — não descreva cada variável isoladamente.",
     ],
     porque: "A introdução contextualiza a pesquisa num quadro científico amplo, apresenta a pergunta e valida o objetivo.",
     erros: ["Introdução-enciclopédia, com tudo que se sabe sobre cada variável."],
-    campos: [{ id: "outline", tipo: "outline", rotulo: "Outline da Introdução", secao: "introducao", soTopicos: true }],
+    campos: [
+      { id: "fund", tipo: "fundamentacao", rotulo: "O que a fundamentação precisa mostrar (pelo seu tipo lógico)" },
+      { id: "outline", tipo: "outline", rotulo: "Outline da Introdução", secao: "introducao", soTopicos: true },
+    ],
   },
   {
     id: "p26",
     passo: 26,
     fase: "redacao",
     titulo: "Redija a Introdução",
-    fonte: `${GUIA}, Passo 26`,
-    oque: ["Transforme cada item do outline num parágrafo.", "Confira se os parágrafos estão bem conectados e terminam no objetivo."],
+    fonte: `${GUIA}, Passo 26; ${AULA}`,
+    oque: [
+      "Transforme cada item do outline num parágrafo: tópico → sustentação (a prova vem da literatura) → especificação (relevância, necessidade lógica) → transição.",
+      "Confira se os parágrafos estão bem conectados e terminam no objetivo. Se o leitor não consegue prever o objetivo e a hipótese a partir da fundamentação, a Introdução está inadequada.",
+      "A revisão de literatura não é uma seção da Introdução: aqui entra só o estado da arte que leva à lacuna. Estudos correlatos vão para o Marco Teórico; a comparação com a literatura, para a Discussão.",
+    ],
     porque: "Seguir estritamente o outline mantém a introdução curta e focada.",
     erros: [],
     checar: ["estilo"],
     campos: [{ id: "outline", tipo: "outline", rotulo: "Parágrafos da Introdução", compartilhado: "p25", secao: "introducao" }],
+  },
+  {
+    id: "pmarco-outline",
+    fase: "redacao",
+    titulo: "Faça o outline do Marco Teórico",
+    fonte: AULA,
+    apenas: ["tcc", "monografia", "dissertacao", "tese"],
+    oque: [
+      "Organize só as lentes teóricas necessárias e suficientes para fundamentar o problema, sustentar a pergunta, ancorar o objeto e justificar o delineamento.",
+      "Roteiro: quadro teórico geral → conceitos fundamentais → estrutura conceitual do objeto → estudos correlatos → integração teoria–método.",
+      "Hierarquia: teoria central → conceitos derivados → categorias operacionais. Cada conceito prepara o próximo.",
+    ],
+    porque:
+      "O Marco Teórico é a ponte conceitual entre a Introdução e os Métodos: estabelece o vocabulário da pesquisa e deve permitir ao leitor prever a metodologia. O objetivo deve soar como consequência lógica dele.",
+    erros: [
+      "Inventário de autores ou história do conceito (“quem disse o quê, quando”).",
+      "Incluir teorias que não são usadas na pesquisa.",
+      "Repetir o que já foi dito na Introdução ou trazer detalhes de método.",
+    ],
+    campos: [{ id: "outline", tipo: "outline", secao: "marco", soTopicos: true, rotulo: "Outline do Marco Teórico" }],
+  },
+  {
+    id: "pmarco",
+    fase: "redacao",
+    titulo: "Redija o Marco Teórico",
+    fonte: AULA,
+    apenas: ["tcc", "monografia", "dissertacao", "tese"],
+    oque: [
+      "Redação explicativa, não compilatória: ensine o raciocínio teórico em vez de apenas citar quem o disse.",
+      "Use verbos cognitivos e relacionais (explicar, fundamentar, derivar, implicar, relacionar), não verbos de fala (dizer, afirmar, considerar).",
+      "Transforme citações em raciocínio: em vez de “Lakoff (1993) diz que metáforas são conceptuais”, escreva “Metáforas são compreendidas aqui como estruturas conceptuais (Lakoff, 1993) que orientam a cognição”.",
+    ],
+    porque: "O referencial define como o mundo será interpretado (premissas teóricas); a Discussão mostra se os resultados confirmam, ampliam ou refutam essa explicação.",
+    erros: ["“Segundo diversos autores…” — citação vaga que não sustenta nada.", "Citações empilhadas sem relação lógica."],
+    checar: ["estilo"],
+    campos: [{ id: "outline", tipo: "outline", secao: "marco", compartilhado: "pmarco-outline", rotulo: "Parágrafos do Marco Teórico" }],
   },
   {
     id: "p27",
@@ -698,17 +788,23 @@ const ETAPAS = [
     passo: 28,
     fase: "redacao",
     titulo: "Redija o Resumo",
-    fonte: `${GUIA}, Passo 28`,
+    fonte: `${GUIA}, Passo 28; ${AULA}`,
     oque: [
+      "Trabalhos acadêmicos (aulas): resumo como mini-artigo em 7 movimentos — problema → lacuna → objetivo → tipo de pesquisa → método → resultados → conclusão. Preencha os movimentos e use “Montar resumo”.",
       "Resumo criativo: a essência do estudo em poucas frases — (1) contexto necessário para entender as conclusões; (2) principais achados/conclusões; (3) implicação ou novidade.",
       "Ajuste depois ao formato exigido (resumo estruturado, limites da ABNT NBR 6028 ou da revista).",
     ],
     porque: "O resumo decide se o trabalho será lido; ele precisa mostrar a conclusão, não esconder.",
-    erros: ["Resumo que só descreve o que foi feito ('foram analisados…') sem dizer o que foi concluído."],
+    erros: [
+      "Resumo que só descreve o que foi feito ('foram analisados…') sem dizer o que foi concluído.",
+      "Citações, revisão de literatura, justificativas longas ou enumeração de capítulos no resumo.",
+      "Palavras-chave genéricas (“linguagem”, “contexto”) ou que não aparecem no título/objetivo.",
+    ],
     checar: ["resumo", "estilo"],
     campos: [
+      { id: "movimentos", tipo: "resumo7", rotulo: "Os 7 movimentos do resumo" },
       { id: "resumo", tipo: "textarea", rotulo: "Resumo", secao: "resumo" },
-      { id: "palavras", tipo: "text", rotulo: "Palavras-chave", ph: "3 a 5, separadas por ponto e vírgula" },
+      { id: "palavras", tipo: "text", rotulo: "Palavras-chave", ph: "3 a 5, da mais geral à mais específica, separadas por ponto e vírgula: conceito central; categoria analítica; recorte; método" },
       { id: "abstract", tipo: "textarea", rotulo: "Abstract (se exigido)" },
     ],
   },
@@ -736,8 +832,9 @@ const ETAPAS = [
     passo: 30,
     fase: "redacao",
     titulo: "Construa o Título",
-    fonte: `${GUIA}, Passo 30`,
+    fonte: `${GUIA}, Passo 30; ${AULA}`,
     oque: [
+      "Trabalhos acadêmicos (aulas): o título reúne objeto teórico + ação científica (caracterização, associação…) + recorte empírico; se ficar longo, use subtítulo (título = O QUÊ; subtítulo = COMO/ONDE). Veja os modelos abaixo.",
       "Exponha a principal novidade — de preferência a conclusão.",
       "Priorize variáveis teóricas; generalize no limite do possível; foque no fenômeno, não na amostra.",
       "Curto, palavras simples, sem abreviaturas, sem método nem comparações.",
@@ -745,7 +842,11 @@ const ETAPAS = [
     porque: "O título é o letreiro do trabalho: deve atrair sem enganar.",
     erros: ["'Estudo/análise/avaliação de…' — descreve a atividade, não a descoberta.", "Destacar cidade/estado quando a conclusão é geral."],
     checar: ["titulo"],
-    campos: [{ id: "titulo", tipo: "text", rotulo: "Título", secao: "titulo" }, { id: "alternativas", tipo: "list", rotulo: "Versões alternativas" }],
+    campos: [
+      { id: "modelos", tipo: "modelos-titulo", rotulo: "Modelos de título" },
+      { id: "titulo", tipo: "text", rotulo: "Título", secao: "titulo" },
+      { id: "alternativas", tipo: "list", rotulo: "Versões alternativas" },
+    ],
   },
 
   /* ============================ ACABAMENTO ============================ */
@@ -864,6 +965,25 @@ const ETAPAS = [
     campos: [{ id: "respostas", tipo: "list", rotulo: "Comentário → resposta → alteração" }],
   },
   {
+    id: "pqualificacao",
+    fase: "acabamento",
+    titulo: "Prepare a qualificação",
+    fonte: AULA,
+    apenas: ["dissertacao", "tese"],
+    oque: [
+      "A qualificação avalia a solidez lógica da pesquisa, não os resultados: o que compõe a argumentação prévia precisa estar consolidado.",
+      "Marque o que está pronto. O que depende da coleta e da análise pode estar em construção, desde que o percurso metodológico esteja claro.",
+      "Gere a nota ao avaliador indicando as seções em construção.",
+    ],
+    porque: "Problema, lacuna e objetivo sustentam tudo o mais; se mudarem depois da qualificação, toda a lógica da pesquisa se desloca.",
+    erros: ["Levar à banca um problema ou uma lacuna ainda instáveis."],
+    campos: [
+      { id: "definitivo", tipo: "checklist", rotulo: "Deve estar DEFINITIVO", itens: window.AULAS.QUALIFICACAO.definitivo },
+      { id: "construcao", tipo: "checklist", rotulo: "Pode estar EM CONSTRUÇÃO (marque o que ainda falta)", itens: window.AULAS.QUALIFICACAO.construcao },
+      { id: "nota", tipo: "nota-qualificacao", rotulo: "Nota ao avaliador" },
+    ],
+  },
+  {
     id: "pdefesa",
     fase: "acabamento",
     titulo: "Prepare a defesa",
@@ -880,6 +1000,19 @@ const ETAPAS = [
       { id: "roteiro", tipo: "outline", rotulo: "Roteiro da apresentação (uma ideia por slide)", soTopicos: true },
       { id: "perguntas", tipo: "list", rotulo: "Perguntas prováveis → resposta" },
     ],
+  },
+  {
+    id: "pia",
+    fase: "acabamento",
+    titulo: "Declare o uso de Inteligência Artificial",
+    fonte: AULA,
+    oque: [
+      "Se usou IA, declare de forma transparente, específica e delimitada, numa seção “Declaração de uso de Inteligência Artificial” (no fim ou onde o programa/revista pedir).",
+      "Deixe claro que a IA não produziu raciocínio científico, não formulou argumentos nem executou passos da análise, e que não há coautoria.",
+    ],
+    porque: "Transparência é integridade científica; a autoria intelectual — decisões teóricas, metodológicas e analíticas — é sempre do pesquisador.",
+    erros: ["“A IA escreveu partes do texto.”", "“A IA construiu o marco teórico.”", "“A IA analisou os dados.” — caracterizam autoria indevida."],
+    campos: [{ id: "declaracao", tipo: "declaracao-ia", rotulo: "Declaração" }],
   },
   {
     id: "p39",
@@ -907,8 +1040,8 @@ const ETAPAS = [
 
 /* Ordem das seções no documento final (ordem de leitura). */
 const ESTRUTURA_DOC = {
-  artigo: ["titulo", "resumo", "introducao", "metodos", "resultados", "discussao", "referencias"],
-  academico: ["titulo", "resumo", "introducao", "metodos", "resultados", "discussao", "conclusoes", "referencias"],
+  artigo: ["titulo", "resumo", "introducao", "metodos", "resultados", "discussao", "referencias", "ia"],
+  academico: ["titulo", "resumo", "introducao", "marco", "metodos", "resultados", "discussao", "conclusoes", "referencias", "ia"],
 };
 
 window.METODO = { TIPOS_TRABALHO, TIPOS_LOGICOS, FASES, ETAPAS, ESTRUTURA_DOC };
