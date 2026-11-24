@@ -4,6 +4,13 @@ Programa com interface amigável que conduz o pesquisador, passo a passo, **do p
 
 ## Como usar
 
+### Instalador para Windows (.exe)
+1. Execute `Metodo-Logico-Instalador.exe` (gerado com `scripts/gerar_instalador.sh`, que usa o NSIS; sai em `dist/`).
+2. Não pede administrador: instala em `%LOCALAPPDATA%\Programs\MetodoLogico`, cria atalhos no menu Iniciar e na área de trabalho e aparece em *Configurações → Aplicativos* para desinstalar.
+3. O atalho abre o programa numa janela própria do Microsoft Edge (ou do Chrome, se não houver Edge), sem internet.
+4. Como o instalador não tem assinatura digital, o Windows pode mostrar “O Windows protegeu o computador”: clique em *Mais informações → Executar assim mesmo*.
+5. Para atualizar, execute a versão nova por cima; os trabalhos continuam salvos no navegador.
+
 ### No computador (sem internet)
 1. Baixe o pacote `Metodo-Logico.zip` (gerado com `python3 scripts/empacotar.py`, em `dist/`) e descompacte numa pasta fixa.
 2. Abra com dois cliques: `Abrir Metodo Logico (Windows).bat`, `Abrir Metodo Logico (Mac).command` ou `abrir-metodo-logico-linux.sh`. O programa abre numa janela própria do Edge/Chrome, como um aplicativo. Também funciona abrindo `index.html` direto no navegador.
@@ -54,6 +61,8 @@ manifest.webmanifest, sw.js, icones/   instalação como aplicativo (PWA) e uso 
 vendor/jszip.min.js biblioteca JSZip 3.10.1 (MIT/GPLv3) para gerar o .docx sem internet
 atalhos/            atalhos de abertura (Windows, Mac, Linux) e LEIA-ME do pacote
 scripts/empacotar.py  gera dist/Metodo-Logico.zip
+windows/            script NSIS do instalador (instalador.nsi) e ícone .ico
+scripts/gerar_instalador.sh  gera dist/Metodo-Logico-Instalador.exe
 js/diagnostico.js   diagnóstico de objetivo, hipótese, pergunta e conclusões (por que está inadequado + como corrigir)
 js/planejador.js    regras de compatibilidade do desenho da pesquisa (o funil)
 js/aulas.js         conteúdo das aulas (roteiros, frases, delineamentos, testes, gráficos, modelos)
