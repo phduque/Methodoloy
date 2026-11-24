@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#1f5f5b"/>
+  <!-- Pirâmide Lógica: evidências na base, conclusões acima -->
+  <g fill="none" stroke="#e3efed" stroke-width="14" stroke-linecap="round">
+    <path d="M256 150 L176 262 M256 150 L336 262 M176 262 L112 372 M176 262 L216 372 M336 262 L296 372 M336 262 L400 372"/>
+  </g>
+  <circle cx="256" cy="138" r="40" fill="#e6a15c"/>
+  <circle cx="176" cy="262" r="32" fill="#e3efed"/>
+  <circle cx="336" cy="262" r="32" fill="#e3efed"/>
+  <g fill="#e3efed">
+    <rect x="84" y="362" width="56" height="44" rx="10"/>
+    <rect x="188" y="362" width="56" height="44" rx="10"/>
+    <rect x="268" y="362" width="56" height="44" rx="10"/>
+    <rect x="372" y="362" width="56" height="44" rx="10"/>
+  </g>
+</svg>

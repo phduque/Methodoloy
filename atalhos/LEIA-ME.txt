@@ -1,0 +1,28 @@
+MÉTODO LÓGICO — ASSISTENTE DE PESQUISA (versão para o computador)
+
+COMO INSTALAR
+1. Descompacte o arquivo .zip numa pasta fixa (por exemplo, Documentos\Metodo-Logico).
+   Não use o programa de dentro do .zip.
+2. Abra com dois cliques:
+   - Windows: "Abrir Metodo Logico (Windows).bat"
+   - Mac:     "Abrir Metodo Logico (Mac).command"
+              (na primeira vez, clique com o botão direito > Abrir, e confirme)
+   - Linux:   "abrir-metodo-logico-linux.sh"
+   O programa abre numa janela própria, como um aplicativo, e funciona sem internet.
+   Se preferir, abra direto o arquivo index.html no navegador (Edge, Chrome ou Firefox).
+
+ATALHO NA ÁREA DE TRABALHO (Windows)
+Clique com o botão direito no arquivo "Abrir Metodo Logico (Windows).bat" >
+"Mostrar mais opções" > "Enviar para" > "Área de trabalho (criar atalho)".
+
+ONDE FICAM OS SEUS TRABALHOS
+Os trabalhos ficam salvos no próprio navegador deste computador.
+- Use sempre o mesmo navegador e a mesma pasta.
+- Faça backups: Documento > "Backup (.json)". Para recuperar ou levar a outro
+  computador, use "Importar backup" na tela inicial.
+- A versão do computador e a versão on-line (link do Claude) não compartilham
+  os trabalhos automaticamente: passe de uma para a outra pelo backup (.json).
+
+ATUALIZAR
+Baixe a nova versão, descompacte por cima da pasta antiga (substituindo os arquivos)
+e abra de novo. Seus trabalhos continuam no navegador.

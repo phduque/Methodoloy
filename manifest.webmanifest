@@ -1,0 +1,16 @@
+{
+  "name": "Método Lógico — Assistente de Pesquisa",
+  "short_name": "Método Lógico",
+  "description": "Assistente passo a passo do projeto à redação final de TCC, dissertação, tese e artigo, pelo Método Lógico de Volpato.",
+  "lang": "pt-BR",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f6f4ef",
+  "theme_color": "#1f5f5b",
+  "icons": [
+    { "src": "icones/icone-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icones/icone-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icones/icone.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

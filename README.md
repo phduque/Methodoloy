@@ -4,11 +4,16 @@ Programa com interface amigável que conduz o pesquisador, passo a passo, **do p
 
 ## Como usar
 
-Não precisa instalar nada. Baixe/clone o repositório e abra `index.html` no navegador (Chrome, Edge, Firefox ou Safari).
+### No computador (sem internet)
+1. Baixe o pacote `Metodo-Logico.zip` (gerado com `python3 scripts/empacotar.py`, em `dist/`) e descompacte numa pasta fixa.
+2. Abra com dois cliques: `Abrir Metodo Logico (Windows).bat`, `Abrir Metodo Logico (Mac).command` ou `abrir-metodo-logico-linux.sh`. O programa abre numa janela própria do Edge/Chrome, como um aplicativo. Também funciona abrindo `index.html` direto no navegador.
+3. Veja `LEIA-ME.txt` para criar atalho na área de trabalho, fazer backup e atualizar.
 
-> Os dados ficam salvos **no próprio navegador** (localStorage). Use *Documento → Backup (.json)* com frequência para guardar seu trabalho ou levá-lo a outro computador, e *Importar backup* na tela inicial para recuperá-lo.
+### Como aplicativo instalável (PWA)
+Hospedado num endereço https (por exemplo, GitHub Pages, Netlify ou o servidor da instituição), o Chrome e o Edge mostram **Instalar aplicativo** na barra de endereço. Ele ganha ícone próprio, janela própria e funciona sem internet (`manifest.webmanifest` + `sw.js`).
 
-Para publicar on-line (opcional): ative o GitHub Pages neste repositório (Settings → Pages → branch e pasta raiz).
+### Dados
+Os trabalhos ficam salvos no navegador do computador. Exporte backups com frequência (*Documento → Backup (.json)*) e use *Importar backup* para recuperá-los ou levá-los a outro computador.
 
 ## O que o programa faz
 
@@ -45,6 +50,10 @@ Recursos (incluindo o material das aulas de Metodologia da Pesquisa em Linguíst
 ```
 index.html          página do aplicativo
 css/estilo.css      aparência
+manifest.webmanifest, sw.js, icones/   instalação como aplicativo (PWA) e uso offline
+vendor/jszip.min.js biblioteca JSZip 3.10.1 (MIT/GPLv3) para gerar o .docx sem internet
+atalhos/            atalhos de abertura (Windows, Mac, Linux) e LEIA-ME do pacote
+scripts/empacotar.py  gera dist/Metodo-Logico.zip
 js/diagnostico.js   diagnóstico de objetivo, hipótese, pergunta e conclusões (por que está inadequado + como corrigir)
 js/planejador.js    regras de compatibilidade do desenho da pesquisa (o funil)
 js/aulas.js         conteúdo das aulas (roteiros, frases, delineamentos, testes, gráficos, modelos)
